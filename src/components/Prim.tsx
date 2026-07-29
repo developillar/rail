@@ -145,26 +145,3 @@ export function Ticks({
   );
 }
 
-/** The throw mark: filled from a seat, hollow from the rail. */
-export function Diamond({
-  size = 10,
-  color,
-  hollow = false,
-  style,
-  ...pos
-}: AbsBox & { size?: number; color: string; hollow?: boolean; style?: ViewStyle }) {
-  return (
-    <View
-      style={[
-        abs({ ...pos, w: size, h: size }),
-        {
-          transform: [{ rotate: '45deg' }],
-          ...(hollow
-            ? { borderWidth: 1, borderColor: color }
-            : { backgroundColor: color }),
-        },
-        style,
-      ]}
-    />
-  );
-}

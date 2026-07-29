@@ -153,7 +153,6 @@ export function useTable() {
     cancelRaise,
     timeout,
     nextHand,
-    setPhase,
   };
 }
 

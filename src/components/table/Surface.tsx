@@ -5,7 +5,7 @@ import { Board, PlayingCard } from '@/components/Card';
 import { Box, Mono, Rule, Sans, Ticks } from '@/components/Prim';
 import { CAST, HAND, type SeatId } from '@/data/fixtures';
 import { BET_CHIP, BOUNDARY, CHROME, SEATS } from '@/data/tableLayout';
-import { amber, chips, GROUND, ink } from '@/design/tokens';
+import { amber, AMBER_LIGHT, chips, GROUND, ink } from '@/design/tokens';
 import type { Residue } from '@/state/useTable';
 
 /**
@@ -197,7 +197,7 @@ export function Seat({
         style={[labelStyle, { opacity }]}
       >
         <View style={{ flexDirection: 'row', alignItems: 'center', gap: 6 }}>
-          <Sans size={9} tracking={0.2} color={targeted ? '#fabc86' : ink()}>
+          <Sans size={9} tracking={0.2} color={targeted ? AMBER_LIGHT : ink()}>
             {player.name}
           </Sans>
           {residue ? <ResidueMark count={residue.count} /> : null}

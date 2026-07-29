@@ -10,7 +10,7 @@ import { Box, Mono, Rule, Sans, Ticks } from '@/components/Prim';
 import { ThrowMark } from '@/components/Reaction';
 import { Screen } from '@/components/Screen';
 import { CLIP, THROWABLES } from '@/data/fixtures';
-import { amber, chips, ink, INK, SURFACE } from '@/design/tokens';
+import { amber, AMBER_LIGHT, chips, ink, INK, SURFACE } from '@/design/tokens';
 
 /**
  * 6b — the clip. Reactions live in time.
@@ -221,7 +221,7 @@ export default function ClipScreen() {
               }}
             >
               <Mono size={20}>{item.face}</Mono>
-              <Mono size={7} tracking={0.14} color={active ? '#fabc86' : ink(0.5)}>
+              <Mono size={7} tracking={0.14} color={active ? AMBER_LIGHT : ink(0.5)}>
                 {item.name}
               </Mono>
             </Pressable>

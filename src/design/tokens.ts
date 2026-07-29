@@ -26,8 +26,6 @@ export const AMBER_LIGHT = '#fabc86';
 export const ink = (alpha = 1) => (alpha >= 1 ? INK : `rgba(232,231,228,${alpha})`);
 /** The signal colour. Reserved for time and expression: the clock and the crowd. */
 export const amber = (alpha = 1) => (alpha >= 1 ? AMBER : `rgba(254,120,37,${alpha})`);
-/** Ground at an alpha — used to punch a notch through a boundary hairline. */
-export const ground = (alpha = 1) => (alpha >= 1 ? GROUND : `rgba(10,10,11,${alpha})`);
 
 /** Surfaces. Four steps only; they are backgrounds, never cards. */
 export const SURFACE = {

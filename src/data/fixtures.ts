@@ -110,14 +110,6 @@ export const THROWABLES: Throwable[] = [
   { id: 'crown', face: '👑', name: 'CROWN', meaning: 'EARNED\nRESPECT', owned: false, origin: 'earned' },
 ];
 
-/** The seat tray of ask 3 — drawn marks rather than faces. */
-export const SEAT_TRAY = [
-  { id: 'chip', label: 'CHIP', mark: 'ring' },
-  { id: 'slap', label: 'SLAP', mark: 'dot' },
-  { id: 'ice', label: 'ICE', mark: 'diamond' },
-  { id: 'rule', label: 'RULE', mark: 'bar' },
-  { id: 'locked', label: 'LOCKED', mark: 'dashed' },
-] as const;
 
 export const COOLDOWN_MS = 2500;
 

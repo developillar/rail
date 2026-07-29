@@ -1,7 +1,7 @@
 import { useState } from 'react';
 import { Pressable, View } from 'react-native';
 import Animated, { useAnimatedStyle, useSharedValue, withTiming } from 'react-native-reanimated';
-import { Box, Mono, Rule, Sans, Ticks } from '@/components/Prim';
+import { Box, Mono, Rule, Sans } from '@/components/Prim';
 import { EarnedItem, PurchasedItem } from '@/components/Provenance';
 import { Screen } from '@/components/Screen';
 import { COUNTER } from '@/data/fixtures';
@@ -217,9 +217,6 @@ export default function ShopScreen() {
           NO ITEM IS EVER SOLD WITH TICKS — THAT IS THE WHOLE DEAL
         </Mono>
       </Box>
-
-      {/* The tick strip is the shop's own counter-argument, so it appears once. */}
-      <Ticks l={20} t={567} w={380} h={3} pitch={6} color={ink(0.14)} />
     </Screen>
   );
 }
