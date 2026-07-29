@@ -4,6 +4,7 @@ import { useRouter } from 'expo-router';
 import { Gesture, GestureDetector } from 'react-native-gesture-handler';
 import { runOnJS } from 'react-native-reanimated';
 import * as Haptics from 'expo-haptics';
+import { LeaveMark } from '@/components/AppShell';
 import { Bust } from '@/components/Bust';
 import { Board } from '@/components/Card';
 import { Box, Mono, Rule, Sans, Ticks } from '@/components/Prim';
@@ -67,6 +68,19 @@ export default function ClipScreen() {
         </Mono>
       </Box>
       <Rule l={0} t={44} w={420} color={ink(0.14)} />
+      {/*
+        The clip keeps its own header, and it is the design: the clip, its room
+        and its hand named once in mono 8, the reaction total opposite, over a
+        1px rule at y=44 — the same header the rail draws, because the two are
+        the same hand at two distances. A 20/700 wordmark and a 2px rule at 56
+        would cost 44 units on a 760-unit fit canvas whose scrub, lane and
+        thrower row cannot reflow.
+        So the mark is added to that rule instead: a 2px bone stub at l=20, the
+        bar's notch inverted. It closes the clip back to the edition it was
+        published in, and replaces to /feed on a cold link where there is no
+        history — a clip opened from a share is still a page of the edition.
+      */}
+      <LeaveMark label="CLOSE THE CLIP" ruleY={44} fallback="/feed" />
 
       <Box l={0} t={76} w={420} style={{ alignItems: 'center', gap: 7 }}>
         <Sans size={8} tracking={0.3} color={ink(0.4)}>
@@ -305,11 +319,19 @@ export default function ClipScreen() {
             backgroundColor: pressed ? SURFACE.press : undefined,
           })}
         >
+          {/*
+            The other way out: not back to the edition but forward into the room
+            the hand is still being played in, which is the rail — you watch
+            first here as everywhere. The room's number moved out of the Helvetica
+            phrase and into the mono figure slot beside it, the same grammar the
+            door on HOME uses ("Walk in on Bea's table / 238 WATCHING"): no
+            numeral is ever set in Helvetica in this app.
+          */}
           <Sans size={12} weight={500}>
-            Open table {CLIP.table}
+            Walk in
           </Sans>
-          <Mono size={8} color={ink(0.55)}>
-            1 SEAT
+          <Mono size={8} tracking={0.1} color={ink(0.55)}>
+            TABLE {CLIP.table} · 1 SEAT
           </Mono>
         </Pressable>
       </Box>

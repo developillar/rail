@@ -1,6 +1,7 @@
 import { useState } from 'react';
 import { Pressable, View } from 'react-native';
 import Animated, { useAnimatedStyle, useSharedValue, withTiming } from 'react-native-reanimated';
+import { LeaveMark, Masthead } from '@/components/AppShell';
 import { Box, Mono, Rule, Sans } from '@/components/Prim';
 import { EarnedItem, PurchasedItem } from '@/components/Provenance';
 import { Screen } from '@/components/Screen';
@@ -15,6 +16,13 @@ import { chips, GROUND, ink, INK, MS, SURFACE } from '@/design/tokens';
  * in credits, named makers, no bundles and no boxes. The load-bearing section is
  * NOT FOR SALE — ticked items with their requirements, advertised in the shop,
  * because nothing here is ever sold with ticks and that is the whole deal.
+ *
+ * INTEGRATION — the counter's masthead is the shared one (the stock's date stays
+ * in the meta slot, where it belongs: this counter dates itself the way the
+ * edition does), and the mark that leaves is added to its 2px rule. The counter
+ * is the deepest pushed screen in the app and it is a dead end on purpose —
+ * nothing is bought *onward* from here — so the one thing it owes you is a way
+ * out, back to the loadout you came in from, or to HOME on a cold link.
  */
 export default function ShopScreen() {
   const [owned, setOwned] = useState(false);
@@ -34,17 +42,8 @@ export default function ShopScreen() {
 
   return (
     <Screen height={720} mode="scroll">
-      <Box l={20} t={20}>
-        <Mono size={20} weight={700} tracking={0.26}>
-          THE COUNTER
-        </Mono>
-      </Box>
-      <Box r={20} t={26}>
-        <Mono size={8} tracking={0.12} color={ink(0.5)}>
-          STOCK · {COUNTER.date}
-        </Mono>
-      </Box>
-      <Rule l={0} t={56} w={420} weight={2} color={ink(0.8)} />
+      <Masthead title="THE COUNTER" meta={`STOCK · ${COUNTER.date}`} />
+      <LeaveMark label="LEAVE THE COUNTER" ruleY={56} fallback="/home" />
 
       <View style={{ position: 'absolute', left: 20, top: 80, width: 118, height: 118 }}>
         <PurchasedItem l={0} t={0} w={118} h={118} face={COUNTER.lead.face} maker={undefined} />

@@ -9,6 +9,7 @@ import Animated, {
   withSequence,
   withTiming,
 } from 'react-native-reanimated';
+import { LeaveMark } from '@/components/AppShell';
 import { Bust, EmptySeat } from '@/components/Bust';
 import { Board } from '@/components/Card';
 import { Box, Mono, Rule, Sans, Ticks } from '@/components/Prim';
@@ -81,6 +82,22 @@ export default function RailScreen() {
             </Mono>
           </Box>
           <Rule l={0} t={44} w={420} color={ink(0.14)} />
+          {/*
+            The rail keeps its own header, and it is the design: the room named
+            once in mono 9 with the crowd figure opposite it, over a 1px rule at
+            y=44. This is a 720-unit fit canvas — the shared masthead's 20/700
+            wordmark and 2px rule at y=56 would cost 44 units the closed table,
+            the crowd and the throw row do not have, and the wordmark would name
+            the app on a screen whose whole subject is one room.
+            So only the mark is added, on the header rule this screen already
+            draws: a 2px bone stub at l=20 — the bar's notch inverted, an
+            addition where the notch is a subtraction — naming what you leave.
+            Drawn here rather than over the vantage so its press fill can never
+            cover the plan; both Vantage and Tape are pointerEvents="none", so
+            nothing above it can swallow the press, and the swipe still owns the
+            gesture because a tap never travels the pan's 20-unit threshold.
+          */}
+          <LeaveMark label="LEAVE THE RAIL" ruleY={44} fallback="/tables" />
 
           {view === 'table' ? (
             <Vantage landed={landed} joining={joining} />

@@ -2,11 +2,12 @@ import { useState } from 'react';
 import { Pressable, View } from 'react-native';
 import { useRouter } from 'expo-router';
 import Animated, { useAnimatedStyle, useSharedValue, withTiming } from 'react-native-reanimated';
+import { LeaveMark, Masthead } from '@/components/AppShell';
 import { Bust } from '@/components/Bust';
 import { Box, Mono, Rule, Sans, Ticks } from '@/components/Prim';
 import { EarnedItem, PurchasedItem } from '@/components/Provenance';
 import { Screen } from '@/components/Screen';
-import { CAST, LOADOUT } from '@/data/fixtures';
+import { CAST, COUNTER, LOADOUT } from '@/data/fixtures';
 import { EASE } from '@/design/motion';
 import { amber, GROUND, ink, INK, MS, SURFACE } from '@/design/tokens';
 
@@ -18,25 +19,29 @@ import { amber, GROUND, ink, INK, MS, SURFACE } from '@/design/tokens';
  * your throw lands on their head strip, so equipping is a decision about how
  * you will read to other people. Swapping is free and instant — loadout is
  * expression, not commitment.
+ *
+ * INTEGRATION — three things. The masthead is the shared one, so the four slots
+ * hang off the same 2px rule every other document in the app hangs off. The mark
+ * that leaves is added to that rule. And the way on to the counter moved: it was
+ * a mono link with an arrow on it, sitting on top of the meta figure in the
+ * masthead's own corner. An arrow is an icon and the shell owns no icon
+ * language, a route is not a caption, and two right-ranged agate lines cannot
+ * share one corner — so it is now a slab at the foot, in the grammar every route
+ * out of a document uses: a Helvetica phrase you press with the figure it needs
+ * set in mono beside it, and a real press fill instead of a fade.
  */
+/** The counter's slab, and the ground the document ends on. */
+const OUT = { rule: 694, slab: 710, h: 44 };
+
 export default function LoadoutScreen() {
   const router = useRouter();
   const [equipped, setEquipped] = useState<boolean[]>(LOADOUT.slots.map((s) => s.equipped));
   const [filled, setFilled] = useState(false);
 
   return (
-    <Screen height={700} mode="scroll">
-      <Box l={20} t={20}>
-        <Mono size={20} weight={700} tracking={0.26}>
-          LOADOUT
-        </Mono>
-      </Box>
-      <Box r={20} t={26}>
-        <Mono size={8} tracking={0.12} color={ink(0.5)}>
-          4 SLOTS · 1 RAIL CARD
-        </Mono>
-      </Box>
-      <Rule l={0} t={56} w={420} weight={2} color={ink(0.8)} />
+    <Screen height={OUT.slab + OUT.h + 14} mode="scroll">
+      <Masthead title="LOADOUT" meta="4 SLOTS · 1 RAIL CARD" />
+      <LeaveMark label="LEAVE THE LOADOUT" ruleY={56} fallback="/home" />
 
       {LOADOUT.slots.map((slot, i) => {
         const top = 84 + i * 78;
@@ -195,21 +200,34 @@ export default function LoadoutScreen() {
         </Mono>
       </Box>
 
+      {/* The way on. A slot you cannot fill from the shelves is filled at the
+          counter, so the counter is the last thing on this document — thumb-
+          reachable, and carrying what you have to spend there in the mono figure
+          slot rather than inside the phrase. Credits buy objects, never chips. */}
+      <Rule l={0} t={OUT.rule} w={420} color={ink(0.2)} />
       <Pressable
         onPress={() => router.push('/shop')}
+        accessibilityRole="button"
         style={({ pressed }) => ({
           position: 'absolute',
-          right: 20,
-          top: 20,
-          width: 84,
-          height: 24,
-          alignItems: 'flex-end',
-          justifyContent: 'center',
-          opacity: pressed ? 0.6 : 1,
+          left: 20,
+          top: OUT.slab,
+          width: 380,
+          height: OUT.h,
+          borderWidth: 1,
+          borderColor: ink(0.35),
+          flexDirection: 'row',
+          alignItems: 'center',
+          justifyContent: 'space-between',
+          paddingHorizontal: 12,
+          backgroundColor: pressed ? SURFACE.press : undefined,
         })}
       >
-        <Mono size={7} tracking={0.16} color={ink(0.55)}>
-          THE COUNTER →
+        <Sans size={12} weight={500} color={ink(0.85)}>
+          The counter
+        </Sans>
+        <Mono size={9} tracking={0.1} color={ink(0.5)}>
+          {COUNTER.balance} · STOCK {COUNTER.date}
         </Mono>
       </Pressable>
     </Screen>

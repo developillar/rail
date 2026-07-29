@@ -1,5 +1,6 @@
 import { Pressable, View } from 'react-native';
 import { useRouter } from 'expo-router';
+import { Masthead } from '@/components/AppShell';
 import { Bust, EmptySeat } from '@/components/Bust';
 import { Box, Mono, Rule, Sans } from '@/components/Prim';
 import { RailStrip } from '@/components/RailStrip';
@@ -17,6 +18,15 @@ import { amber, chips, ink, INK } from '@/design/tokens';
  * the sort order is noise — how many people are watching, never how much money
  * is on the felt. Your people's table gets the plan's full width; everything
  * else is the identical object at a third the size.
+ *
+ * INTEGRATION — the plan is not a room of its own, it is TABLES at a different
+ * distance, so its masthead is the shared one and the way back is the register
+ * pair rather than a mark: `LISTINGS · PLAN` with the 2px rule notched under the
+ * half you are standing in. That is the nav's own device at masthead scale, which
+ * is why this screen carries no LeaveMark and no bar — one screen with two ways
+ * back would be two devices for one act, and the notch already says where you
+ * are. `LISTINGS` returns to the register you came from, and replaces to
+ * `/tables` on a cold start where there is nothing to go back to.
  */
 export default function FloorScreen() {
   const router = useRouter();
@@ -24,17 +34,18 @@ export default function FloorScreen() {
 
   return (
     <Screen height={900} mode="scroll">
-      <Box l={20} t={20}>
-        <Mono size={20} weight={700} tracking={0.26}>
-          THE FLOOR
-        </Mono>
-      </Box>
-      <Box r={20} t={26}>
-        <Mono size={8} tracking={0.12} color={ink(0.5)}>
-          {FLOOR.live} LIVE · {chips(FLOOR.onRails)} ON RAILS
-        </Mono>
-      </Box>
-      <Rule l={0} t={56} w={420} weight={2} color={ink(0.8)} />
+      <Masthead
+        title="THE FLOOR"
+        meta={`${FLOOR.live} LIVE · ${chips(FLOOR.onRails)} ON RAILS`}
+        register={{
+          labels: ['LISTINGS', 'PLAN'],
+          active: 1,
+          onPress: () => {
+            if (router.canGoBack()) router.back();
+            else router.replace('/tables');
+          },
+        }}
+      />
 
       <Box l={20} t={70}>
         <Mono size={7} tracking={0.3} color={ink(0.5)}>

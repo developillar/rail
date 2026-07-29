@@ -40,15 +40,27 @@ available.
 
 ## The screens
 
-Enter at the index (`app/index.tsx`), which lists all eight and is the one screen not in the
-handoff — the designs navigate through their own content and carry no nav chrome on purpose.
+Twelve routes. You enter at `app/index.tsx` — the boot mark, which draws the object the app is
+named after and hands off by *becoming the navigation*: the line walks down to the foot of the
+screen and is the rail, the wordmark walks up into HOME's masthead, and it `replace()`s to
+`/home`, so back never returns to a splash.
+
+Four of the twelve are **destinations** and carry the rail — one 2px hairline across the bottom,
+broken by a 58-unit notch cut where you are standing. The other seven are screens you were
+pushed into to do one thing, and they carry a `LeaveMark` instead: a 2px stub *added* to their
+own top hairline, the notch inverted. `src/components/AppShell.tsx` owns both, reads the
+pathname itself, and cannot be notched wrongly.
 
 | Route | Ask | What it is |
 |---|---|---|
-| `/floor` | 7a | The lobby, drawn as a plan you walk. Noise is the sort order, never stakes. |
+| `/` | shell §4 | The boot mark. Not a place you can stand — it hands off to `/home` and leaves no history. |
+| `/home` | shell §5 | **Destination.** The door, not the dashboard: are my people playing, and do I walk in. |
+| `/tables` | shell §6 | **Destination.** The listings. Noise is the sort order; `PLAN` in its masthead is `/floor`. |
+| `/feed` | 6a | **Destination.** The edition — a masthead, one lead hand with a verdict, everything else in agate. |
+| `/friends` | shell §7 | **Destination.** Your rail as an object: presence drawn on the line, and the ledger under it. |
+| `/floor` | 7a | The lobby, drawn as a plan you walk — TABLES' second register, not a screen of its own. |
 | `/table` | 1a, 2a–2f, 3b, 4a/4b | Six-max mid-hand: action bar in four states, the slide rule, drag-to-throw, the showdown. |
 | `/rail` | 5a, 5b, 5c | Watching from outside the line. Swipe up for the tape, take a seat to join. |
-| `/feed` | 6a | The edition — a masthead, one lead hand with a verdict, everything else in agate. |
 | `/clip` | 6b | Reactions pinned to the second they landed. The scrub is the bet slider again. |
 | `/profile` | 8a | The record: hands watched counted alongside hands played. |
 | `/loadout` | 8b | Four slots where earned and purchased sit adjacent. |
@@ -61,9 +73,12 @@ app/                 one file per screen, expo-router
 src/design/          tokens (colour, type, the motion ladder) and easing curves
 src/components/      the shared objects: Bust, PlayingCard, Ticks, Rule, RailStrip,
                      ReactionMark, EarnedItem / PurchasedItem, Grain, Screen
+src/components/AppShell.tsx  the rail, the masthead and the LeaveMark — the notch at three scales
 src/components/table/ the table's own pieces: Surface, Instruments, Targeting, Flight
 src/state/           the scripted hand, the meters, the showdown clock
-src/data/            fixtures (every figure the design was reviewed with) and table geometry
+src/data/            fixtures (every figure the design was reviewed with), the social
+                     fixtures behind the four destinations, and table geometry
+docs/                the shell spec, the design notes and the PRD
 project/             the original design handoff — read `project/RAIL Table.dc.html`
 chats/               the conversation the design came out of
 ```

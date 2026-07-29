@@ -1,12 +1,12 @@
 import { useEffect, useMemo, useState } from 'react';
 import { Pressable, View } from 'react-native';
-import { useRouter } from 'expo-router';
 import Animated, {
   useAnimatedStyle,
   useSharedValue,
   withSequence,
   withTiming,
 } from 'react-native-reanimated';
+import { LeaveMark } from '@/components/AppShell';
 import { Bust } from '@/components/Bust';
 import { PlayingCard } from '@/components/Card';
 import { Box, Mono, Rule, Sans, Ticks } from '@/components/Prim';
@@ -42,7 +42,6 @@ import { useTable } from '@/state/useTable';
 const EMPTY_BOARD = [null, null, null, null, null];
 
 export default function TableScreen() {
-  const router = useRouter();
   const api = useTable();
   const cooldown = useCooldown(api.cooldownUntil);
   const clock = useCountdown(HAND.clockSeconds, api.phase === 'your-turn', api.timeout);
@@ -114,8 +113,28 @@ export default function TableScreen() {
       {/* Nothing has to be dismissed; a tap anywhere skips to T+900. */}
       {isShowdown ? <Pressable style={{ position: 'absolute', inset: 0 }} onPress={skip} /> : null}
 
-      <Pressable onPress={() => router.back()} hitSlop={12} style={{ position: 'absolute', left: 0, top: 40, width: 140, height: 40 }} />
       <Header watching={HAND.watching + (api.phase === 'folded' ? 1 : 0)} reacted={!isShowdown} />
+      {/*
+        The way out, and the only piece of shell this screen takes. The table's
+        own header is the design — the RAIL wordmark at mono 14/.36 on
+        CHROME.header, over a 1px rule at y=88, sized so the surface below it
+        keeps every unit the handoff drew — so the shared masthead is not used
+        here: a 20/700 wordmark and a 2px rule at y=56 would push the boundary,
+        the pot and the instrument down a fit canvas that cannot reflow.
+        What replaces the old invisible 140×40 tap target over the wordmark is
+        the mark itself: a 2px bone stub *added* to that header rule, because the
+        bar's notch is a subtraction that says you are here, and returning is its
+        inverse. It names what you are leaving in the same agate the eyebrows are
+        set in, and it is the top of the screen on purpose — the bottom 190 units
+        are the instrument (clock rule 720, action bar 722–810, cooldown to 858),
+        and per §2 nothing that leaves the table may sit a thumb-width from ALL IN.
+      */}
+      <LeaveMark
+        label="LEAVE THE TABLE"
+        ruleY={CHROME.header.rule}
+        fallback="/tables"
+        place="above"
+      />
       <Boundary />
 
       {/* The seats. Busts sit outside the hairline; the line breaks where one is. */}

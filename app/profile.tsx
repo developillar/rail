@@ -1,5 +1,6 @@
 import { Pressable, View } from 'react-native';
 import { useRouter } from 'expo-router';
+import { LeaveMark, Masthead } from '@/components/AppShell';
 import { Bust } from '@/components/Bust';
 import { Box, Mono, Rule, Sans } from '@/components/Prim';
 import { EarnedItem, PurchasedItem } from '@/components/Provenance';
@@ -16,36 +17,40 @@ import { ink, SURFACE } from '@/design/tokens';
  * 58 times" is a statistic. Earned and purchased get separate shelves, not
  * because purchased is shameful but because a shared shelf would let the two
  * classes borrow each other's meaning.
+ *
+ * INTEGRATION — the record's masthead was already the app's masthead to the
+ * unit, so it is now drawn by the shared one and cannot drift from it, and the
+ * mark that leaves hangs off the same 2px rule. This is a pushed screen: the bar
+ * is not drawn over it, because the record is a thing you came here to read
+ * rather than a room you stand in. The two rooms it does open — the loadout, and
+ * the counter through it — are pressed from inside it and hand you back here.
  */
 export default function ProfileScreen() {
   const router = useRouter();
 
   return (
     <Screen height={870} mode="scroll">
-      <Box l={20} t={20}>
-        <Mono size={20} weight={700} tracking={0.26}>
-          THE RECORD
-        </Mono>
-      </Box>
-      <Box r={20} t={26}>
-        <Mono size={8} tracking={0.12} color={ink(0.5)}>
-          {RECORD.handle}
-        </Mono>
-      </Box>
-      <Rule l={0} t={56} w={420} weight={2} color={ink(0.8)} />
+      <Masthead title="THE RECORD" meta={RECORD.handle} />
+      <LeaveMark label="LEAVE THE RECORD" ruleY={56} fallback="/home" />
 
-      <Bust l={20} t={74} size={72} emoji={RECORD.face} frame="bone" headStrip="ink" headStripAlpha={0.75} />
-      <Box l={106} t={80}>
+      {/*
+        The identity block starts at 84, not 74: LeaveMark sets its label at
+        ruleY + 8 — 64 to 71 — and a bust's head strip is cut nine units *above*
+        its own top edge, so a bust at 74 draws bone ticks straight through that
+        label. 84 is the clearance /loadout already uses for its first tile.
+      */}
+      <Bust l={20} t={84} size={72} emoji={RECORD.face} frame="bone" headStrip="ink" headStripAlpha={0.75} />
+      <Box l={106} t={90}>
         <Mono size={18} weight={700} tracking={0.18}>
           {RECORD.handle}
         </Mono>
       </Box>
-      <Box l={106} t={108}>
+      <Box l={106} t={118}>
         <Mono size={8} tracking={0.14} color={ink(0.5)}>
           {RECORD.sessions} SESSIONS · {RECORD.hoursOnRail} H ON THE RAIL
         </Mono>
       </Box>
-      <Box l={106} t={126}>
+      <Box l={106} t={136}>
         <Mono size={8} tracking={0.14} color={ink(0.35)}>
           SEATED FROM THE RAIL {RECORD.seatedFromRail} TIMES
         </Mono>

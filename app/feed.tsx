@@ -1,5 +1,6 @@
 import { Pressable, View } from 'react-native';
 import { useRouter } from 'expo-router';
+import { Masthead, NAV_RESERVE } from '@/components/AppShell';
 import { Bust } from '@/components/Bust';
 import { Board, PlayingCard } from '@/components/Card';
 import { Box, Mono, Rule, Sans } from '@/components/Prim';
@@ -16,24 +17,33 @@ import { chips, ink, INK, SURFACE } from '@/design/tokens';
  * everything else demoted to agate under section rules. Hierarchy carries the
  * judgement, not engagement counters — reaction counts sit below the fold of
  * each item, never above a headline.
+ *
+ * THE MASTHEAD IS THE DESIGN, and it is kept to the unit: the wordmark at
+ * (20, 20) in mono 20/700/.26, the edition dated in agate on the right, and the
+ * 2px rule at y=56 that brackets the document. It is drawn by the shared
+ * `<Masthead>` rather than by hand because that component *is* these values —
+ * §8 of the shell spec specifies it as exactly what this screen already drew —
+ * so the edition's masthead and the app's other three now cannot drift apart.
+ * The date and the edition number stay in the meta slot: this document dates
+ * itself, which is why the nav bar under it never counts what is unread.
+ *
+ * THE RESERVE — the one number that changed. FEED is a destination, so the rail
+ * is drawn across the foot of the viewport while this document scrolls under it,
+ * and §2 requires every destination canvas to end with NAV_RESERVE units of
+ * empty ground below its last ink. Last ink is the crowd strip, which ends at
+ * 850, so the canvas ends at 914 instead of 900. Nothing moved; 14 units of
+ * ground were added under a scrolling document so nothing lands beneath the bar.
  */
+/** Last ink: the foot's crowd busts, t=828, size 22. */
+const LAST_INK = 850;
+
 export default function FeedScreen() {
   const router = useRouter();
   const lead = EDITION.lead;
 
   return (
-    <Screen height={900} mode="scroll">
-      <Box l={20} t={20}>
-        <Mono size={20} weight={700} tracking={0.26}>
-          THE RAIL
-        </Mono>
-      </Box>
-      <Box r={20} t={26}>
-        <Mono size={8} tracking={0.14} color={ink(0.5)}>
-          {EDITION.date} · ED {EDITION.number}
-        </Mono>
-      </Box>
-      <Rule l={0} t={56} w={420} weight={2} color={ink(0.8)} />
+    <Screen height={LAST_INK + NAV_RESERVE} mode="scroll">
+      <Masthead title="THE RAIL" meta={`${EDITION.date} · ED ${EDITION.number}`} />
 
       <Box l={20} t={70}>
         <Mono size={7} tracking={0.3} color={ink(0.5)}>
