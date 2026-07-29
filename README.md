@@ -15,10 +15,24 @@ measurement ticks, one amber signal reserved for time and expression.
 
 ```
 npm install
+npx expo start     # then scan the QR code with Expo Go
 npm run ios        # or: npm run android
 npm run web        # useful for reviewing every screen quickly
 npm run typecheck
 ```
+
+### On your phone, in Expo Go
+
+1. Install **Expo Go** from the App Store / Play Store.
+2. `npm install` then `npx expo start` in this directory.
+3. Scan the QR code in the terminal — iOS with the Camera app, Android from inside Expo Go.
+   Phone and computer need to be on the same network; if they are not, `npx expo start
+   --tunnel` routes around it.
+
+Everything here runs in Expo Go as-is — no native modules, no dev build, no config plugins
+that need one. It is built on Expo SDK 57, so the Expo Go on your phone should be current.
+The app is portrait-only and drawn on a fixed 420-wide canvas, so it scales to whatever
+phone you are holding.
 
 Fonts (JetBrains Mono) are fetched by `@expo-google-fonts/jetbrains-mono` and loaded before
 first paint — every figure in the app is set in mono, so nothing renders until the face is
