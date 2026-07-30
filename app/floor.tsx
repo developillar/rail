@@ -7,7 +7,7 @@ import { RailStrip } from '@/components/RailStrip';
 import { ReactionMark } from '@/components/Reaction';
 import { Screen } from '@/components/Screen';
 import { CROWD, FLOOR } from '@/data/fixtures';
-import { amber, chips, ink, INK } from '@/design/tokens';
+import { amber, chips, ink, INK, SURFACE } from '@/design/tokens';
 
 /**
  * 7a — the floor.
@@ -128,6 +128,8 @@ export default function FloorScreen() {
       <Box l={20} t={350} w={380} h={44} style={{ flexDirection: 'row' }}>
         <Pressable
           onPress={() => router.push('/table')}
+          accessibilityRole="button"
+          accessibilityLabel={`Take seat 1 at table ${hero.table}, minimum buy-in ${chips(hero.minBuyIn)}`}
           style={({ pressed }) => ({
             width: 240,
             height: 44,
@@ -137,7 +139,7 @@ export default function FloorScreen() {
             alignItems: 'center',
             justifyContent: 'space-between',
             paddingHorizontal: 12,
-            backgroundColor: pressed ? '#17181a' : undefined,
+            backgroundColor: pressed ? SURFACE.press : undefined,
           })}
         >
           <Sans size={12} weight={500}>
@@ -149,6 +151,8 @@ export default function FloorScreen() {
         </Pressable>
         <Pressable
           onPress={() => router.push('/rail')}
+          accessibilityRole="button"
+          accessibilityLabel={`Just watch table ${hero.table} from the rail`}
           style={({ pressed }) => ({
             width: 140,
             height: 44,
@@ -157,7 +161,7 @@ export default function FloorScreen() {
             borderColor: ink(0.3),
             alignItems: 'center',
             justifyContent: 'center',
-            backgroundColor: pressed ? '#17181a' : undefined,
+            backgroundColor: pressed ? SURFACE.press : undefined,
           })}
         >
           <Sans size={12} weight={500} color={ink(0.8)}>
@@ -191,8 +195,14 @@ export default function FloorScreen() {
       <Rule l={0} t={768} w={420} color={ink(0.2)} />
       <Box l={20} t={784} w={380} h={44} style={{ flexDirection: 'row' }}>
         {['Open a table', 'Private room'].map((label, i) => (
-          <View
+          // Drawn but not wired yet, and it says so to a screen reader rather
+          // than presenting as a live control. Same treatment as /tables.
+          <Pressable
             key={label}
+            disabled
+            accessibilityRole="button"
+            accessibilityLabel={label}
+            accessibilityState={{ disabled: true }}
             style={{
               width: 190,
               height: 44,
@@ -206,7 +216,7 @@ export default function FloorScreen() {
             <Sans size={12} weight={500} color={ink(0.85)}>
               {label}
             </Sans>
-          </View>
+          </Pressable>
         ))}
       </Box>
       <Box l={20} t={848} w={380}>
@@ -237,6 +247,8 @@ function MiniTable({
   return (
     <Pressable
       onPress={onPress}
+      accessibilityRole="button"
+      accessibilityLabel={`Table ${room.table}, ${room.stakes}, ${room.watching} watching`}
       style={{ position: 'absolute', left: l, top: t, width: 178, height: 126, opacity: room.opacity }}
     >
       {empty ? (
@@ -284,7 +296,7 @@ function MiniTable({
         </Mono>
       </Box>
 
-      {empty ? null : <ReactionMark l={0} t={112} count={room.watching} scale="agate" color={room.watching < 4 ? amber(0.8) : amber()} />}
+      {empty ? null : <ReactionMark l={0} t={112} count={room.watching} scale="agate" />}
       <Box r={0} t={112}>
         <Mono size={7} tracking={0.1} color={ink(0.4)}>
           {room.seats}

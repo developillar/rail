@@ -11,7 +11,7 @@ import { Box, Mono, Rule, Sans, Ticks } from '@/components/Prim';
 import { ThrowMark } from '@/components/Reaction';
 import { Screen } from '@/components/Screen';
 import { CLIP, THROWABLES } from '@/data/fixtures';
-import { amber, AMBER_LIGHT, chips, ink, INK, SURFACE } from '@/design/tokens';
+import { amber, AMBER_LIGHT, chips, GROUND, ink, INK, SURFACE } from '@/design/tokens';
 
 /**
  * 6b — the clip. Reactions live in time.
@@ -71,8 +71,10 @@ export default function ClipScreen() {
       {/*
         The clip keeps its own header, and it is the design: the clip, its room
         and its hand named once in mono 8, the reaction total opposite, over a
-        1px rule at y=44 — the same header the rail draws, because the two are
-        the same hand at two distances. A 20/700 wordmark and a 2px rule at 56
+        1px rule at y=44 — the same header the rail draws, one point smaller on
+        a canvas 40 units taller (the handoff sets 5a/5b at mono 9 and 6b at
+        mono 8), because the two are the same hand at two distances.
+        A 20/700 wordmark and a 2px rule at 56
         would cost 44 units on a 760-unit fit canvas whose scrub, lane and
         thrower row cannot reflow.
         So the mark is added to that rule instead: a 2px bone stub at l=20, the
@@ -221,6 +223,11 @@ export default function ClipScreen() {
                 setThrown(item.id);
                 Haptics.impactAsync(Haptics.ImpactFeedbackStyle.Light).catch(() => {});
               }}
+              accessibilityRole="button"
+              // The amber tint and the AMBER_LIGHT label are the selected state
+              // (5a/6b); `selected` is how that reaches a screen reader.
+              accessibilityLabel={`Throw ${item.name} at this frame${item.owned ? '' : ' — not owned'}`}
+              accessibilityState={{ selected: active, disabled: !item.owned }}
               style={{
                 width: 95,
                 height: 52,
@@ -262,7 +269,7 @@ export default function ClipScreen() {
                 height: 12,
                 borderWidth: p.fromSeat ? 0 : 1,
                 borderColor: amber(),
-                backgroundColor: p.fromSeat ? amber() : '#0a0a0b',
+                backgroundColor: p.fromSeat ? amber() : GROUND,
                 alignItems: 'center',
                 justifyContent: 'center',
               }}
@@ -290,7 +297,12 @@ export default function ClipScreen() {
 
       <Rule l={0} t={666} w={420} color={ink(0.14)} />
       <Box l={20} t={684} w={380} h={44} style={{ flexDirection: 'row' }}>
-        <View
+        {/* Drawn but not wired yet; it declares that rather than pretending. */}
+        <Pressable
+          disabled
+          accessibilityRole="button"
+          accessibilityLabel="Share clip"
+          accessibilityState={{ disabled: true }}
           style={{
             width: 190,
             height: 44,
@@ -303,9 +315,11 @@ export default function ClipScreen() {
           <Sans size={12} weight={500} color={ink(0.85)}>
             Share clip
           </Sans>
-        </View>
+        </Pressable>
         <Pressable
           onPress={() => router.push('/rail')}
+          accessibilityRole="button"
+          accessibilityLabel={`Walk in on table ${CLIP.table}, 1 seat open`}
           style={({ pressed }) => ({
             width: 190,
             height: 44,

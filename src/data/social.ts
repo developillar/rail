@@ -1,4 +1,4 @@
-import { CROWD, EDITION, FLOOR, RAIL, RECORD, YOU } from './fixtures';
+import { COUNTER, EDITION, FLOOR, LOADOUT, RAIL, RECORD, ROOM_FACES, YOU } from './fixtures';
 
 /**
  * The social and session fixtures the shell's four destinations are drawn from:
@@ -19,8 +19,10 @@ import { CROWD, EDITION, FLOOR, RAIL, RECORD, YOU } from './fixtures';
  *    of the roster is drawn from the same register of names.
  * 2. Okonkwo is the opponent to act in the hand you are standing at (`RAIL.tape`,
  *    and HOME's amber clock reads OKONKWO TO ACT), so he is on now at table 12 and
- *    is *not* one of tonight's four counted rooms — the room he is in is the room
- *    you are already at. The mastheads count `FEATURED_RAIL`.
+ *    is *not* one of tonight's four counted *rooms* — the room he is in is the room
+ *    you are already at. `FEATURED_RAIL` is therefore the four rooms, while the
+ *    mastheads count everybody the roster says is on now, Okonkwo included: a
+ *    figure over a ledger has to be the count of the ledger.
  *
  * Chips are play chips. Nothing in any string here is transferable, purchasable,
  * cashable or worth anything.
@@ -42,7 +44,8 @@ export const HOME_NOW = {
   face: YOU.face,
   seat: YOU.seat,
   chipsInPlay: YOU.stack,
-  credits: '4,050 CR',
+  /** The counter's own balance, so HOME and `/shop` cannot print two of it. */
+  credits: COUNTER.balance,
   sessions: RECORD.sessions,
   hoursOnRail: RECORD.hoursOnRail,
   atTables: 4,
@@ -62,8 +65,9 @@ export const HOME_NOW = {
   },
   freeThrows: RAIL.freeThrows,
   freeThrowCap: RAIL.freeThrowCap,
-  slotsUsed: 3,
-  slots: 4,
+  /** The loadout's own figures: three equipped tiles and the dashed fourth slot. */
+  slotsUsed: LOADOUT.slots.length,
+  slots: LOADOUT.slots.length + 1,
   railShown: 6,
   railMore: 5,
 };
@@ -187,12 +191,47 @@ export type LiveRoom = {
 };
 
 /**
+ * How many faces each room's rail carries, and the order they come off
+ * `ROOM_FACES`. The cursor is what makes "no face stands on two rails at once"
+ * true — the claim is structural rather than something to check by eye, and
+ * `/tables` draws all six rails on one canvas. Table 12 comes first because its
+ * three are `CROWD`'s three, the crowd every other screen draws for that room.
+ */
+const RAIL_FACE_COUNT: [table: number, faces: number][] = [
+  [12, 3],
+  [7, 3],
+  [9, 2],
+  [3, 2],
+  [21, 1],
+  [30, 0],
+];
+
+const RAILS: Record<number, string[]> = (() => {
+  const out: Record<number, string[]> = {};
+  let at = 0;
+  for (const [table, faces] of RAIL_FACE_COUNT) {
+    out[table] = ROOM_FACES.slice(at, at + faces);
+    at += faces;
+  }
+  return out;
+})();
+
+/**
  * §6's six listings, loudest first. Table 12 / 7 / 3 / 21 / 30 carry `FLOOR`'s
  * pots, watching counts and seat labels unchanged — a room that shows a different
  * pot in the two registers is a defect. Table 9 is the sixth room the spec asks
  * for, written in the same voice and landing between 238 and 20 so the bands
- * spread across all four. Rail faces come from `CROWD`, in draw order, so no face
- * stands on two rails at once.
+ * spread across all four.
+ *
+ * Rail faces are sliced off `ROOM_FACES` by `RAILS`, disjointly, and `railMore`
+ * is always `watching − railFaces.length`: the remainder is arithmetic on the
+ * faces beside it, never a figure typed in. `/tables` narrows the strip again to
+ * its tone band, so it recomputes the remainder at the slice.
+ *
+ * Faces are the one thing this register cannot take from `FLOOR.rest` unchanged:
+ * the plan hangs 🦊 on table 3 and 🦁 on table 21 while also hanging both off
+ * table 12's hero rule, and one bust cannot stand on two rails. Table 12 keeps
+ * its own three, and the rooms under it stand their own people.
  */
 export const ROOMS: LiveRoom[] = [
   {
@@ -203,8 +242,8 @@ export const ROOMS: LiveRoom[] = [
     sentence: 'Nobody at this table has folded a river all night, and the rail has gone quiet watching them.',
     pot: FLOOR.rest[0].pot,
     watching: FLOOR.rest[0].watching,
-    railFaces: [CROWD[5], CROWD[6], CROWD[4]],
-    railMore: FLOOR.rest[0].watching - 3,
+    railFaces: RAILS[7],
+    railMore: FLOOR.rest[0].watching - RAILS[7].length,
     band: noiseBand(FLOOR.rest[0].watching),
     minBuyIn: 8000,
   },
@@ -216,8 +255,8 @@ export const ROOMS: LiveRoom[] = [
     sentence: 'Bea is running the room and nobody at it wants to be the one who leaves first.',
     pot: FLOOR.hero.pot,
     watching: FLOOR.hero.watching,
-    railFaces: [CROWD[0], CROWD[1], CROWD[2]],
-    railMore: FLOOR.hero.railMore,
+    railFaces: RAILS[12],
+    railMore: FLOOR.hero.watching - RAILS[12].length,
     band: noiseBand(FLOOR.hero.watching),
     minBuyIn: FLOOR.hero.minBuyIn,
   },
@@ -229,8 +268,8 @@ export const ROOMS: LiveRoom[] = [
     sentence: 'One seat left, and the player who opens every pot is sitting directly to its right.',
     pot: 6240,
     watching: 64,
-    railFaces: [CROWD[3], CROWD[7]],
-    railMore: 62,
+    railFaces: RAILS[9],
+    railMore: 64 - RAILS[9].length,
     band: noiseBand(64),
     minBuyIn: 8000,
   },
@@ -242,8 +281,8 @@ export const ROOMS: LiveRoom[] = [
     sentence: 'A slow, talkative room where everybody turns their hand over afterwards whether they have to or not.',
     pot: FLOOR.rest[1].pot,
     watching: FLOOR.rest[1].watching,
-    railFaces: [CROWD[2], CROWD[0]],
-    railMore: FLOOR.rest[1].watching - 2,
+    railFaces: RAILS[3],
+    railMore: FLOOR.rest[1].watching - RAILS[3].length,
     band: noiseBand(FLOOR.rest[1].watching),
     minBuyIn: 1600,
   },
@@ -255,8 +294,8 @@ export const ROOMS: LiveRoom[] = [
     sentence: 'Half the seats are open and the dealer is dealing faster than anyone here is thinking.',
     pot: FLOOR.rest[2].pot,
     watching: FLOOR.rest[2].watching,
-    railFaces: [CROWD[4]],
-    railMore: FLOOR.rest[2].watching - 1,
+    railFaces: RAILS[21],
+    railMore: FLOOR.rest[2].watching - RAILS[21].length,
     band: noiseBand(FLOOR.rest[2].watching),
     minBuyIn: 1600,
   },
@@ -268,8 +307,8 @@ export const ROOMS: LiveRoom[] = [
     sentence: 'Dark until two in the morning, when the late crowd comes off the rail and sits down.',
     pot: FLOOR.rest[3].pot,
     watching: FLOOR.rest[3].watching,
-    railFaces: [],
-    railMore: 0,
+    railFaces: RAILS[30],
+    railMore: FLOOR.rest[3].watching - RAILS[30].length,
     band: noiseBand(FLOOR.rest[3].watching),
     minBuyIn: FLOOR.hero.minBuyIn,
   },
@@ -526,14 +565,17 @@ export const LEDGER: RailPerson[] = [...RAIL_ROSTER]
   .slice(0, 6);
 
 /**
- * §7's masthead and hero. `onNow` counts `FEATURED_RAIL` — the four rooms of your
- * rail with somebody in them — and is the same figure as the nav bar's people
- * ticks. `crowd` is table 12's whole rail (`RAIL.watching`), the one amber mark
- * on the screen, legal because it is the crowd.
+ * §7's masthead and hero. `onNow` is the roster's own definition of on now —
+ * every person at a table or on a rail — and is the same figure as the nav bar's
+ * people ticks. It is counted off `RAIL_ROSTER`, never off `FEATURED_RAIL`: the
+ * four busts on the line are the four *rooms*, so counting them printed 4 over a
+ * ledger that draws 5 people lit. `crowd` is table 12's whole rail
+ * (`RAIL.watching`), the one amber mark on the screen, legal because it is the
+ * crowd.
  */
 export const RAIL_NOW = {
   railSize: RAIL_ROSTER.length,
-  onNow: FEATURED_RAIL.length,
+  onNow: RAIL_ROSTER.filter((p) => p.status === 'table' || p.status === 'rail').length,
   restShown: 3,
   restCount: RAIL_REST.length,
   crowd: RAIL.watching,
@@ -646,6 +688,10 @@ export const CONSTRAINT = {
   ] as [string, string],
   tables: [
     'EVERY ROOM IS PLAY CHIPS ONLY · SORTED BY NOISE, NEVER BY STAKES',
+    'CHIPS CANNOT BE BOUGHT, TRANSFERRED OR CASHED OUT',
+  ] as [string, string],
+  feed: [
+    'EVERY HAND HERE WAS PLAYED FOR PLAY CHIPS',
     'CHIPS CANNOT BE BOUGHT, TRANSFERRED OR CASHED OUT',
   ] as [string, string],
   friends: [

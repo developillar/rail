@@ -1,4 +1,4 @@
-import { Pressable, View } from 'react-native';
+import { Pressable } from 'react-native';
 import { useRouter } from 'expo-router';
 import { Masthead } from '@/components/AppShell';
 import { Box, Mono, Rule, Sans, Ticks } from '@/components/Prim';
@@ -6,7 +6,7 @@ import { RailStrip } from '@/components/RailStrip';
 import { ReactionMark } from '@/components/Reaction';
 import { Screen } from '@/components/Screen';
 import { CONSTRAINT, ROOMS, TABLES_META, type LiveRoom, type NoiseBand } from '@/data/social';
-import { amber, chips, ink, INK, SURFACE } from '@/design/tokens';
+import { chips, ink, INK, SURFACE } from '@/design/tokens';
 
 /**
  * §6 — TABLES, 7b's register.
@@ -27,12 +27,14 @@ import { amber, chips, ink, INK, SURFACE } from '@/design/tokens';
  * fixture happens to be written in.
  *
  * 7c's TONE BANDS govern the weight of every entry, exactly as `/floor`'s
- * MiniTable already applies them — one band per room, four channels each:
- * the listing's opacity, the thickness and ink of the room's own rail rule, how
- * many busts hang off it, and the density of the crowd mark (`ReactionMark`
- * counts 2–39 one tick each and masses 40+ into one bar, so the mark's length
- * *is* the crowd). A loud room is a 2px rail with three busts at full ink; a
- * quiet one is a hairline at 22% with one; the dark room is a bare line.
+ * MiniTable already applies them — one band per room, four channels each: the
+ * listing's opacity, the thickness and ink of the room's own rail rule, how many
+ * busts hang off it, and the ink of its pot. A loud room is a 2px rail with three
+ * busts at full ink; a quiet one is a hairline at 22% with one; the dark room is a
+ * bare line. The crowd mark's density is not a fifth channel: `ReactionMark` owns
+ * that register in one place (2–39 counted one tick each, 40+ massed into one bar
+ * that caps, a small crowd dimmer), so the mark's length *is* the crowd and this
+ * screen passes it nothing but the figure.
  *
  * THE EMPTY ROOM gets the only honest call to action in a lobby. Table 30 is not
  * dealing, so it has no pot to print and no crowd to mark — and where the crowd
@@ -60,7 +62,7 @@ import { amber, chips, ink, INK, SURFACE } from '@/design/tokens';
  */
 
 /** The first listing's eyebrow, the pitch between listings, and the row's rect. */
-const HEAD = 206;
+const HEAD = 204;
 const PITCH = 110;
 const ROW_H = 102;
 /** The rule that closes the register. */
@@ -72,9 +74,9 @@ const FOOT = 866;
  * of busts on that rail, and the ink of its pot. Nothing here is a ranking — the
  * loudest room is not drawn *bigger*, it is drawn *louder*.
  *
- * `faces` never truncates the fixture: the rooms in each band carry at most that
- * many rail faces already, so the `+N MORE` remainder can never contradict the
- * strip it sits on.
+ * `faces` may truncate the room's rail — a loud room with two faces draws two —
+ * so the `+N MORE` remainder is computed from the slice rather than read off the
+ * fixture, and the strip's arithmetic cannot drift from the crowd mark beside it.
  */
 const BAND: Record<
   NoiseBand,
@@ -113,7 +115,7 @@ export default function TablesScreen() {
       />
 
       {/* THE EMPTY ZONE, 56 → 190. Three objects in 134 units. */}
-      <Box l={20} t={72}>
+      <Box l={20} t={70}>
         <Mono size={7} tracking={0.3} color={ink(0.5)}>
           {TABLES_META.eyebrow}
         </Mono>
@@ -173,11 +175,21 @@ export default function TablesScreen() {
 
       <Rule l={0} t={FOOT} w={420} color={ink(0.2)} />
 
-      {/* THE FOOT, 866 → 1032. Two cells divided by their own hairline, never boxed. */}
+      {/*
+        THE FOOT, 866 → 1032. Two cells divided by their own hairline, never boxed.
+        Neither opens anything yet, and a control that does nothing must say so to
+        the one reader who cannot see that it is inert: they are drawn at the
+        spec's ink and announced as disabled buttons rather than as two unlabelled
+        text groups. `Sit first` stays the register's only live call to action.
+      */}
       <Box l={20} t={FOOT + 16} w={380} h={44} style={{ flexDirection: 'row' }}>
         {[TABLES_META.openLabel, TABLES_META.privateLabel].map((label, i) => (
-          <View
+          <Pressable
             key={label}
+            disabled
+            accessibilityRole="button"
+            accessibilityLabel={label}
+            accessibilityState={{ disabled: true }}
             style={{
               width: 190,
               height: 44,
@@ -191,7 +203,7 @@ export default function TablesScreen() {
             <Sans size={12} weight={500} color={ink(0.85)}>
               {label}
             </Sans>
-          </View>
+          </Pressable>
         ))}
       </Box>
       <Box l={20} t={FOOT + 74} w={380}>
@@ -226,6 +238,13 @@ function Listing({
 }) {
   const band = BAND[room.band];
   const dark = room.band === 'EMPTY';
+  /*
+    The strip's faces and its remainder are one slice: `+N MORE` is arithmetic on
+    the busts drawn beside it (`watching − faces`), so the row cannot print a
+    remainder for a five-face strip under a three-face one. The tone band decides
+    how many hang; the fixture's own `railMore` is the remainder for all of them.
+  */
+  const faces = room.railFaces.slice(0, band.faces);
 
   return (
     <>
@@ -284,8 +303,8 @@ function Listing({
         <RailStrip
           l={20}
           t={80}
-          faces={room.railFaces.slice(0, band.faces)}
-          more={band.faces === 0 ? 0 : room.railMore}
+          faces={faces}
+          more={room.watching - faces.length}
           moreSuffix=" MORE"
           size={22}
           weight={band.railWeight}
@@ -297,13 +316,7 @@ function Listing({
         {/* The crowd, in the app's one accent — legal because it is expression.
             Its length is the count; a room with nobody in it draws none. */}
         {room.watching === 0 ? null : (
-          <ReactionMark
-            r={20}
-            t={86}
-            count={room.watching}
-            scale="agate"
-            color={room.watching < 4 ? amber(0.8) : amber()}
-          />
+          <ReactionMark r={20} t={86} count={room.watching} scale="agate" />
         )}
       </Pressable>
 

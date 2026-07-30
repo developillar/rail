@@ -23,7 +23,17 @@ import { chips, GROUND, ink, INK, MS, SURFACE } from '@/design/tokens';
  * is the deepest pushed screen in the app and it is a dead end on purpose —
  * nothing is bought *onward* from here — so the one thing it owes you is a way
  * out, back to the loadout you came in from, or to HOME on a cold link.
+ *
+ * THE FIGURE. A counter's one large numeral is the price of the thing on it, so
+ * the lead price is set at the 30 every document in the app sets its lead figure
+ * at (the pot on /floor, /tables, /clip and /feed) rather than at 22 — same
+ * lockup, same slot, one stop up. The balance beside `Buy and equip` is derived
+ * from the stock's own figures instead of typed, so a price change cannot make
+ * the counter lie about credits. Credits buy objects; they are never chips.
  */
+/** The counter's credits, from its own display figure — see `COUNTER.balance`. */
+const BALANCE = Number(String(COUNTER.balance).replace(/[^\d]/g, ''));
+
 export default function ShopScreen() {
   const [owned, setOwned] = useState(false);
   const mark = useSharedValue(0);
@@ -84,7 +94,7 @@ export default function ShopScreen() {
         </Sans>
       </Box>
       <Box l={154} t={172} style={{ flexDirection: 'row', alignItems: 'baseline' }}>
-        <Mono size={22} weight={700} tracking={-0.03}>
+        <Mono size={30} weight={700} tracking={-0.04}>
           {chips(COUNTER.lead.price)}
         </Mono>
         <Mono size={9} tracking={0.14} color={ink(0.5)}>
@@ -100,6 +110,13 @@ export default function ShopScreen() {
 
       <Pressable
         onPress={buy}
+        accessibilityRole="button"
+        accessibilityLabel={
+          owned
+            ? `${COUNTER.lead.title} is owned and equipped`
+            : `Buy and equip ${COUNTER.lead.title} for ${chips(COUNTER.lead.price)} play credits`
+        }
+        accessibilityState={{ selected: owned }}
         style={({ pressed }) => ({
           position: 'absolute',
           left: 20,
@@ -121,7 +138,7 @@ export default function ShopScreen() {
           {owned ? 'Owned · equipped' : 'Buy and equip'}
         </Sans>
         <Mono size={9} color={ink(0.6)}>
-          BALANCE {owned ? '2,250 CR' : COUNTER.balance}
+          BALANCE {chips(owned ? BALANCE - COUNTER.lead.price : BALANCE)} CR
         </Mono>
       </Pressable>
 
@@ -132,7 +149,7 @@ export default function ShopScreen() {
         </Mono>
       </Box>
       <Box r={20} t={294}>
-        <Mono size={7} tracking={0.12} color={ink(0.3)}>
+        <Mono size={7} tracking={0.12} color={ink(0.32)}>
           NO BUNDLES · NO BOXES
         </Mono>
       </Box>
@@ -184,7 +201,7 @@ export default function ShopScreen() {
         </Mono>
       </Box>
       <Box r={20} t={542}>
-        <Mono size={7} tracking={0.12} color={ink(0.35)}>
+        <Mono size={7} tracking={0.12} color={ink(0.32)}>
           TICKS ARE NOT STOCK
         </Mono>
       </Box>
@@ -204,14 +221,14 @@ export default function ShopScreen() {
                 {item.requirement}
               </Mono>
             </Box>
-            {i === 0 ? <Rule l={20} t={top + 38} w={380} color={ink(0.08)} /> : null}
+            {i === 0 ? <Rule l={20} t={top + 38} w={380} color={ink(0.1)} /> : null}
           </View>
         );
       })}
 
       <Rule l={0} t={672} w={420} color={ink(0.14)} />
       <Box l={20} t={686} w={380}>
-        <Mono size={7} tracking={0.1} color={ink(0.4)} lh={1.7}>
+        <Mono size={7} tracking={0.12} color={ink(0.32)} lh={1.7}>
           FLAT PRICES, NAMED MAKERS, DATED STOCK · NOTHING HERE AFFECTS A HAND{'\n'}
           NO ITEM IS EVER SOLD WITH TICKS — THAT IS THE WHOLE DEAL
         </Mono>

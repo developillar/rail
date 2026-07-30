@@ -32,12 +32,16 @@ export function ReactionMark({
   const pitch = agate ? 2 : 4;
   const cap = agate ? 48 : 96;
   const height = agate ? 8 : 14;
+  // A thin crowd is drawn dimmer than a loud one, and that judgement is made
+  // here rather than at each call site, so a strip can never disagree with the
+  // figure beside it.
+  const tone = count > 8 ? color : amber(0.85);
 
   return (
     <View style={[abs(pos), { flexDirection: 'row', alignItems: 'center', gap: agate ? 6 : 8 }, style]}>
       {count === 1 ? (
         <>
-          <View style={{ width: 1, height: height, backgroundColor: color }} />
+          <View style={{ width: 1, height, backgroundColor: tone }} />
           {name ? (
             <Mono size={9} color={ink(0.7)}>
               {name}
@@ -45,7 +49,7 @@ export function ReactionMark({
           ) : null}
         </>
       ) : count >= 40 ? (
-        <View style={{ width: cap, height, backgroundColor: color }} />
+        <View style={{ width: cap, height, backgroundColor: tone }} />
       ) : (
         <Ticks
           l={0}
@@ -53,12 +57,12 @@ export function ReactionMark({
           w={Math.min(cap, count * pitch)}
           h={height}
           pitch={pitch}
-          color={count > 8 ? color : amber(0.85)}
+          color={tone}
           style={{ position: 'relative' }}
         />
       )}
       {showCount && count > 1 ? (
-        <Mono size={agate ? 9 : 13} weight={count >= 40 ? 700 : 700} color={color}>
+        <Mono size={agate ? 9 : 13} weight={700} color={tone}>
           {count.toLocaleString('en-US')}
         </Mono>
       ) : null}

@@ -34,6 +34,30 @@ export const PRIYA: Player = { seat: 6, name: 'PRIYA', face: '🦉', stack: 9150
 /** The crowd. Faces on the rail rule, in the order they are drawn. */
 export const CROWD = ['🐸', '🐼', '🦊', '🐨', '🦁', '🐷', '🐵', '🦝'];
 
+/**
+ * Ask 7b — the register the six rooms' rails are sliced from, in draw order and
+ * disjointly: three faces for table 12, three for 7, two for 9, two for 3, one
+ * for 21, none for the dark room. Eleven faces for eleven busts.
+ *
+ * `CROWD`'s first three open it, because table 12's rail is the one crowd the
+ * rest of the app draws (`/floor` hangs `CROWD`'s first five off the hero's
+ * rule, `/table` and `/rail` draw the same faces), so table 12 reads the same in
+ * both registers. `CROWD[3]` 🐨 and `CROWD[4]` 🦁 are table 12's too — the plan
+ * draws five — so no other room borrows them; the rooms below it take `CROWD`'s
+ * last three and five faces of their own. **A face standing on two rails at
+ * once is a content bug on a screen whose subject is who is watching what**, and
+ * `/tables` draws all six rails on one canvas.
+ */
+export const ROOM_FACES = [
+  ...CROWD.slice(0, 3),
+  ...CROWD.slice(5),
+  '🦅',
+  '🦫',
+  '🦙',
+  '🦦',
+  '🦥',
+];
+
 export type CardSpec = { rank: string; suit: Suit };
 
 const c = (rank: string, suit: Suit): CardSpec => ({ rank, suit });

@@ -16,8 +16,15 @@ import type { Residue } from '@/state/useTable';
 export function Header({ watching, reacted = true }: { watching: number; reacted?: boolean }) {
   return (
     <>
+      {/*
+        The mark's size is per canvas — 14 here against the masthead's 20 — but
+        its letterfit is not: 10a rule 01 is "MONO 700, TRACKING .26EM, NEVER
+        ANOTHER FACE", so the table's header sets the same .26 the masthead and
+        the boot mark do. (The 1a panel drew this one at .36, before 10a named
+        the mark as a system.)
+      */}
       <Box l={20} t={CHROME.header.wordmark.y}>
-        <Mono size={14} weight={700} tracking={0.36}>
+        <Mono size={14} weight={700} tracking={0.26}>
           RAIL
         </Mono>
       </Box>

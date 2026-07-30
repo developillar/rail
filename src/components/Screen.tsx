@@ -1,5 +1,5 @@
 import { ReactNode } from 'react';
-import { ScrollView, useWindowDimensions, View } from 'react-native';
+import { Platform, ScrollView, useWindowDimensions, View } from 'react-native';
 import { useSafeAreaInsets } from 'react-native-safe-area-context';
 import { CANVAS_H, CANVAS_W, GROUND } from '@/design/tokens';
 import { Grain } from './Grain';
@@ -61,6 +61,16 @@ export function Screen({
             paddingBottom: insets.bottom + 24,
           }}
           showsVerticalScrollIndicator={false}
+          /*
+            The soft keyboard must not eat a press. With the default "never", the
+            first tap while a field is focused is spent dismissing the keyboard,
+            so /friends' `Invite` — reachable only while the keyboard is up —
+            needs two taps on a device. "handled" delivers the tap and lets the
+            press dismiss the keyboard itself.
+          */
+          keyboardShouldPersistTaps="handled"
+          /* iOS only, and a no-op elsewhere: keeps a focused field above the keyboard. */
+          automaticallyAdjustKeyboardInsets={Platform.OS === 'ios'}
         >
           {canvas}
         </ScrollView>

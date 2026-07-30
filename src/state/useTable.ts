@@ -1,5 +1,6 @@
 import { useCallback, useEffect, useMemo, useRef, useState } from 'react';
 import { BET, COOLDOWN_MS, HAND, LOSS, type SeatId, WIN } from '@/data/fixtures';
+import { MS } from '@/design/tokens';
 
 /**
  * The table's states, and the scripted hand that walks you through all of them.
@@ -24,8 +25,25 @@ export type Outcome = 'win' | 'loss' | null;
 
 export type Residue = { seat: SeatId; face: string; count: number };
 
+/**
+ * Two script holds and one ladder duration, and the difference matters.
+ *
+ * How long a person takes to act, and how long you sit out a hand you folded,
+ * are facts about the scripted hand — the same species as `useShowdown`'s beats
+ * and the clock: elapsed time, not a transition, and so exempt from the ladder
+ * (law 6). Nothing interpolates across either one; a phase simply changes at the
+ * end of it. They are named here so they read as pacing rather than as stops
+ * someone forgot to look up.
+ *
+ * The deal is the exception: `dealing` → `your-turn` *is* a transition into a
+ * screen state, so it takes its length from MS rather than repeating 900 as a
+ * literal beside two numbers that are deliberately off the ladder.
+ */
 const OPPONENT_THINK_MS = 3200;
-const FOLDED_HAND_MS = 8000;
+/** Seconds the folded state counts down, matching 2c's `NEXT HAND IN 12`. */
+export const FOLDED_HAND_SECONDS = 12;
+const FOLDED_HAND_MS = 12000;
+const DEAL_MS = MS.skip;
 
 export function useTable() {
   const [phase, setPhase] = useState<Phase>('your-turn');
@@ -61,7 +79,7 @@ export function useTable() {
     setStack(WIN.stackFrom);
     setHandNo((n) => n + 1);
     setPhase('dealing');
-    later(() => setPhase('your-turn'), 900);
+    later(() => setPhase('your-turn'), DEAL_MS);
   }, [clear, later]);
 
   /** Your turn ran out. A timed-out hand folds, exactly like a tapped fold. */

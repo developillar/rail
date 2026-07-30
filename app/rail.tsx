@@ -19,7 +19,7 @@ import { Screen } from '@/components/Screen';
 import { Flight } from '@/components/table/Flight';
 import { CAST, CROWD, PRIYA, RAIL, type SeatId, TAPE, THROWABLES } from '@/data/fixtures';
 import { EASE } from '@/design/motion';
-import { amber, chips, ink, INK, MS } from '@/design/tokens';
+import { amber, chips, ink, INK, MS, SURFACE } from '@/design/tokens';
 
 /**
  * Ask 5 — the rail. The screen that earns the name.
@@ -153,6 +153,11 @@ export default function RailScreen() {
                 key={item.id}
                 onPress={() => item.owned && throwAt(item.face, 3)}
                 disabled={!item.owned || free <= 0}
+                accessibilityRole="button"
+                // The cell draws an emoji over a mono name, so the name alone is
+                // what a screen reader would get. Say what the press does.
+                accessibilityLabel={`Throw ${item.name}${item.owned ? '' : ' — not owned'}`}
+                accessibilityState={{ disabled: !item.owned || free <= 0 }}
                 style={({ pressed }) => ({
                   width: 92,
                   height: 52,
@@ -163,7 +168,10 @@ export default function RailScreen() {
                   justifyContent: 'center',
                   gap: 4,
                   opacity: item.owned ? 1 : 0.4,
-                  backgroundColor: pressed && item.owned ? amber(0.1) : undefined,
+                  // A press is a press everywhere in the app. 5a's amber(0.1)
+                  // cell is the *selected* throwable, not the pressed one, so
+                  // the tint would mean two things on two screens.
+                  backgroundColor: pressed && item.owned ? SURFACE.press : undefined,
                 })}
               >
                 <Mono size={20}>{item.face}</Mono>
@@ -179,6 +187,9 @@ export default function RailScreen() {
             <Pressable
               onPress={() => setJoining(true)}
               disabled={joining}
+              accessibilityRole="button"
+              accessibilityLabel={`Take seat 1 at table ${RAIL.table}, minimum buy-in ${chips(RAIL.minBuyIn)}`}
+              accessibilityState={{ disabled: joining }}
               style={({ pressed }) => ({
                 position: 'absolute',
                 left: 20,
@@ -193,7 +204,7 @@ export default function RailScreen() {
                 justifyContent: 'space-between',
                 paddingLeft: 14,
                 paddingRight: 12,
-                backgroundColor: pressed ? '#17181a' : undefined,
+                backgroundColor: pressed ? SURFACE.press : undefined,
               })}
             >
               <Sans size={13} weight={500} tracking={0.02}>
@@ -528,7 +539,7 @@ function Join({ onSeated }: { onSeated: () => void }) {
     );
     const a = setTimeout(() => setBeat(1), MS.exit);
     const b = setTimeout(() => setBeat(2), MS.join);
-    const c = setTimeout(onSeated, MS.join + 420);
+    const c = setTimeout(onSeated, MS.join + MS.count);
     return () => [a, b, c].forEach(clearTimeout);
   }, [onSeated, travel]);
 

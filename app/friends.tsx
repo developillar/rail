@@ -17,6 +17,7 @@ import {
   LEDGER,
   RAIL_NOW,
   RAIL_REST,
+  RAIL_ROSTER,
   REQUESTS_IN,
   REQUESTS_OUT,
   SUGGESTIONS,
@@ -55,6 +56,11 @@ import { chips, ink, INK, mono, SURFACE } from '@/design/tokens';
  * Away is the fourth state and gets no bust: `+4 AWAY TONIGHT`, in agate. A face
  * you cannot stand next to tonight is not a presence.
  *
+ * The four states account for the whole roster, and the masthead's two figures
+ * are derived from `RAIL_ROSTER` here rather than read off a constant, so the
+ * count over the line and the faces on it are one quantity: five on now hanging
+ * off the rule, two standing clear of it, four away — eleven people.
+ *
  * THE MOST INTERESTING STATE ON THE SCREEN gets its own band and its own,
  * heavier line: somebody watching the same hand as you. Priya folded early at
  * table 12 and stayed; you are on that rail too, so the object is one rail rule
@@ -64,8 +70,17 @@ import { chips, ink, INK, mono, SURFACE } from '@/design/tokens';
  * that rail, legal because it is the crowd.
  *
  * DENSITY. Dense zone: the ledger and the two request registers (496 → 1236).
- * Empty zones: the hero (56 → 250, four objects in 194 units) and the relief band
+ * Empty zones: the hero (56 → 250, four objects in 180 units) and the relief band
  * at 928, which is two objects and 30 units of nothing. Type range 7 → 62 = 8.9×.
+ *
+ * EVERY REPEATED ROW IS KEYED ON THE ROW ITSELF and returns a fragment, carrying
+ * its own divider — `tables.tsx`'s `Listing` exactly. A row wants no wrapper at
+ * all: every part of it is already drawn in canvas units, so a wrapper element
+ * can only be a box with no geometry, and a parent 420 × 0 units tall with its
+ * children hundreds of units below it is a row you can see and cannot press —
+ * Android delivers a touch to a child by first finding the parent under the
+ * finger. A fragment puts the row's press rect directly on the canvas, which is
+ * the one view that does contain it.
  *
  * AMBER: exactly one mark, the crowd on the hand you are watching. Nothing else
  * on this screen is amber — not a request, not a count, not a state change.
@@ -104,16 +119,41 @@ const ROOM_LABEL_T = 320;
 const PRESENCE_B = 332;
 /** The notch is cut for the whole bust, so no hairline is drawn through a face. */
 const NOTCH_PAD = 4;
-/** Measured to the four faces, never gridded — segments come out 20/24/80/124. */
-const RAIL_X = [44, 112, 180, 236];
+
+/**
+ * Everybody who is on now, which is what the masthead counts and what the line
+ * has to draw. `FEATURED_RAIL` is the four *rooms* of your rail; Okonkwo is on
+ * now too, at the table you are already standing at, so social.ts leaves him out
+ * of the four and the band was accounting for ten of eleven people. Derived here
+ * rather than typed, so the figure over the line and the faces on it are one
+ * quantity: five on the line, two standing clear, four away.
+ */
+const PRESENT: RailPerson[] = [
+  ...FEATURED_RAIL,
+  ...RAIL_ROSTER.filter(
+    (p) => (p.status === 'table' || p.status === 'rail') && !FEATURED_RAIL.includes(p),
+  ),
+];
+/** The masthead's second figure. Read off the roster, never off the four rooms. */
+const ON_NOW = PRESENT.length;
+
+/** Measured to the faces, never gridded — segments come out 20/24/80/24/56. */
+const RAIL_X = [44, 112, 180, 236, 304];
+/**
+ * Total, so a sixth presence continues the last pitch instead of resolving to
+ * `left: NaN`: the measure is drawn for five and the data decides how many there
+ * are.
+ */
+const railX = (i: number) =>
+  RAIL_X[i] ?? RAIL_X[RAIL_X.length - 1] + (i - RAIL_X.length + 1) * 68;
 
 /**
  * The rule, minus a notch for everybody seated. Derived from the roster rather
  * than typed out, so the line cannot disagree with the people standing on it.
  */
 const RAIL_SEGMENTS: [number, number][] = (() => {
-  const notches = FEATURED_RAIL.flatMap<[number, number]>((p, i) =>
-    p.status === 'table' ? [[RAIL_X[i] - NOTCH_PAD, RAIL_X[i] + BUST_ON + NOTCH_PAD]] : [],
+  const notches = PRESENT.flatMap<[number, number]>((p, i) =>
+    p.status === 'table' ? [[railX(i) - NOTCH_PAD, railX(i) + BUST_ON + NOTCH_PAD]] : [],
   );
   const out: [number, number][] = [];
   let cursor = 20;
@@ -127,7 +167,10 @@ const RAIL_SEGMENTS: [number, number][] = (() => {
 
 const AROUND = RAIL_REST.filter((p) => p.status === 'around');
 const AWAY_COUNT = RAIL_REST.filter((p) => p.status === 'away').length;
-const AROUND_X = [20, 56];
+/** Off the line and in from the margin, on the 22-unit bust's own 36-unit pitch. */
+const aroundX = (i: number) => 20 + i * 36;
+/** The stated fact stands 34 units clear of the last bust, however many there are. */
+const AROUND_LABEL_X = aroundX(Math.max(AROUND.length - 1, 0)) + 34;
 
 const LEDGER_TOP = 536;
 const LEDGER_PITCH = 66;
@@ -142,11 +185,16 @@ const SUGGEST_TOP = 1294;
 const SUGGEST_PITCH = 42;
 
 /** The add-by-handle band. */
-const ADD = { rule: 1420, eyebrow: 1436, field: 1455, line: 1486, note: 1502, foot: 1530 };
+const ADD = { rule: 1420, eyebrow: 1434, field: 1455, line: 1486, note: 1502, foot: 1530 };
 
 export default function FriendsScreen() {
   const router = useRouter();
-  const watching = WATCHING_NOW[0];
+  /**
+   * The screen only ever draws one of these — the hand you are standing at — and
+   * the band is drawn only if there is one, so an empty register cannot resolve to
+   * `undefined.table` in the eyebrow.
+   */
+  const watching: (typeof WATCHING_NOW)[number] | undefined = WATCHING_NOW[0];
 
   /**
    * Three state changes, and all three snap on the frame the finger lifts —
@@ -174,11 +222,11 @@ export default function FriendsScreen() {
       {/* MASTHEAD, 0 → 56. */}
       <Masthead
         title="YOUR RAIL"
-        meta={`${RAIL_NOW.railSize} PEOPLE · ${RAIL_NOW.onNow} ON NOW`}
+        meta={`${RAIL_NOW.railSize} PEOPLE · ${ON_NOW} ON NOW`}
       />
 
-      {/* THE EMPTY ZONE, 56 → 250. Four objects in 194 units, and nothing else. */}
-      <Box l={20} t={78}>
+      {/* THE EMPTY ZONE, 56 → 250. Four objects in 180 units, and nothing else. */}
+      <Box l={20} t={70}>
         <Mono size={7} tracking={0.3} color={ink(0.5)}>
           {RAIL_NOW.eyebrow}
         </Mono>
@@ -202,20 +250,20 @@ export default function FriendsScreen() {
       </Box>
 
       {/*
-        THE LINE, 250 → 356. The rule first, because it is the structure: four
-        segments of 20 / 24 / 80 / 124 units with a notch cut for each of the
-        three people who are sitting down. It bleeds to neither edge because this
+        THE LINE, 250 → 356. The rule first, because it is the structure: five
+        segments of 20 / 24 / 80 / 24 / 56 units with a notch cut for each of the
+        four people who are sitting down. It bleeds to neither edge because this
         is a rail inside a document, not the app's own bottom edge.
       */}
       {RAIL_SEGMENTS.map(([a, b]) => (
         <Rule key={a} l={a} t={RAIL_Y} w={b - a} weight={2} color={ink(0.42)} />
       ))}
 
-      {FEATURED_RAIL.map((person, i) => (
+      {PRESENT.map((person, i) => (
         <PresenceBust
           key={person.handle}
           person={person}
-          x={RAIL_X[i]}
+          x={railX(i)}
           onPress={() => {
             tap();
             router.push('/rail');
@@ -237,10 +285,15 @@ export default function FriendsScreen() {
           }}
           accessibilityRole="button"
           accessibilityLabel={`${person.name}, around`}
-          hitSlop={8}
+          /*
+            No slop upward: the presence targets on the line above run to 332 and
+            these start at 328, so a finger on somebody's room label must not be
+            answered by somebody who is in no room.
+          */
+          hitSlop={{ top: 0, bottom: 8, left: 8, right: 8 }}
           style={({ pressed }) => ({
             position: 'absolute',
-            left: AROUND_X[i] - 6,
+            left: aroundX(i) - 6,
             top: 328,
             width: 34,
             height: 34,
@@ -258,11 +311,13 @@ export default function FriendsScreen() {
           />
         </Pressable>
       ))}
-      <Box l={90} t={339} pointerEvents="none">
-        <Mono size={8} tracking={0.14} color={ink(0.38)}>
-          IN THE APP, IN NO ROOM
-        </Mono>
-      </Box>
+      {AROUND.length > 0 ? (
+        <Box l={AROUND_LABEL_X} t={339} pointerEvents="none">
+          <Mono size={8} tracking={0.14} color={ink(0.38)}>
+            IN THE APP, IN NO ROOM
+          </Mono>
+        </Box>
+      ) : null}
       <Box r={20} t={339} pointerEvents="none">
         <Mono size={8} tracking={0.14} color={ink(0.35)}>
           +{AWAY_COUNT} AWAY TONIGHT
@@ -277,49 +332,53 @@ export default function FriendsScreen() {
         press into that room.
       */}
       <Rule l={0} t={372} w={420} color={ink(0.2)} />
-      <Box l={20} t={388}>
-        <Mono size={7} tracking={0.3} color={ink(0.55)}>
-          WATCHING THE SAME HAND AS YOU
-        </Mono>
-      </Box>
-      <Box r={20} t={388}>
-        <Mono size={7} tracking={0.12} color={ink(0.32)}>
-          TABLE {watching.table} · HAND {chips(TAPE.handNo)} · {HOME_NOW.toAct} TO ACT
-        </Mono>
-      </Box>
-      <Pressable
-        onPress={() => {
-          tap();
-          router.push('/rail');
-        }}
-        accessibilityRole="button"
-        accessibilityLabel={`Walk in on the hand ${watching.handle} is watching`}
-        style={({ pressed }) => ({
-          position: 'absolute',
-          left: 0,
-          top: 400,
-          width: 420,
-          height: 94,
-          backgroundColor: pressed ? SURFACE.press : undefined,
-        })}
-      >
-        <RailStrip
-          l={20}
-          t={10}
-          faces={[YOU.face, watching.face]}
-          size={28}
-          weight={2}
-          ruleColor={ink(0.62)}
-          ruleWidth={380}
-          youIndex={0}
-        />
-        <ReactionMark r={20} t={20} count={RAIL_NOW.crowd} scale="agate" />
-        <Box l={20} t={52} w={356}>
-          <Sans size={13} weight={500} lh={1.35}>
-            {watching.line}
-          </Sans>
-        </Box>
-      </Pressable>
+      {watching ? (
+        <>
+          <Box l={20} t={386}>
+            <Mono size={7} tracking={0.3} color={ink(0.55)}>
+              WATCHING THE SAME HAND AS YOU
+            </Mono>
+          </Box>
+          <Box r={20} t={386}>
+            <Mono size={7} tracking={0.12} color={ink(0.32)}>
+              TABLE {watching.table} · HAND {chips(TAPE.handNo)} · {HOME_NOW.toAct} TO ACT
+            </Mono>
+          </Box>
+          <Pressable
+            onPress={() => {
+              tap();
+              router.push('/rail');
+            }}
+            accessibilityRole="button"
+            accessibilityLabel={`Walk in on the hand ${watching.handle} is watching`}
+            style={({ pressed }) => ({
+              position: 'absolute',
+              left: 0,
+              top: 400,
+              width: 420,
+              height: 94,
+              backgroundColor: pressed ? SURFACE.press : undefined,
+            })}
+          >
+            <RailStrip
+              l={20}
+              t={10}
+              faces={[YOU.face, watching.face]}
+              size={28}
+              weight={2}
+              ruleColor={ink(0.62)}
+              ruleWidth={380}
+              youIndex={0}
+            />
+            <ReactionMark r={20} t={20} count={RAIL_NOW.crowd} scale="agate" />
+            <Box l={20} t={52} w={356}>
+              <Sans size={13} weight={500} lh={1.35}>
+                {watching.line}
+              </Sans>
+            </Box>
+          </Pressable>
+        </>
+      ) : null}
 
       {/*
         THE LEDGER — THE DENSE ZONE, 496 → 907. One quantity read two ways, and
@@ -329,40 +388,34 @@ export default function FriendsScreen() {
         into its top edge, purchased wears a plate inside an offset hairline.
       */}
       <Rule l={0} t={496} w={420} color={ink(0.2)} />
-      <Box l={20} t={512}>
+      <Box l={20} t={510}>
         <Mono size={7} tracking={0.3} color={ink(0.55)}>
           THE LEDGER
         </Mono>
       </Box>
-      <Box l={230} t={512}>
+      <Box l={230} t={510}>
         <Mono size={7} tracking={0.24} color={ink(0.32)}>
           RAIL CARD
         </Mono>
       </Box>
-      <Box r={20} t={512}>
+      <Box r={20} t={510}>
         <Mono size={7} tracking={0.12} color={ink(0.32)}>
           HANDS WATCHED TOGETHER
         </Mono>
       </Box>
 
-      {LEDGER.map((person, i) => {
-        const top = LEDGER_TOP + i * LEDGER_PITCH;
-        return (
-          <Box key={person.handle} l={0} t={0} w={420}>
-            <LedgerRow
-              person={person}
-              top={top}
-              onPress={() => {
-                tap();
-                router.push('/profile');
-              }}
-            />
-            {i < LEDGER.length - 1 ? (
-              <Rule l={20} t={top + 50} w={380} color={ink(0.1)} />
-            ) : null}
-          </Box>
-        );
-      })}
+      {LEDGER.map((person, i) => (
+        <LedgerRow
+          key={person.handle}
+          person={person}
+          top={LEDGER_TOP + i * LEDGER_PITCH}
+          divider={i < LEDGER.length - 1}
+          onPress={() => {
+            tap();
+            router.push('/profile');
+          }}
+        />
+      ))}
 
       {/*
         THE RELIEF, 928 → 1016. Two objects and thirty units of ground, between
@@ -388,94 +441,79 @@ export default function FriendsScreen() {
         both in as its reason, because a rail is people and not a follower count.
         No badge, no counter, no amber.
       */}
-      <Rule l={0} t={1016} w={420} color={ink(0.28)} />
-      <Box l={20} t={1032}>
+      <Rule l={0} t={1016} w={420} color={ink(0.2)} />
+      <Box l={20} t={1030}>
         <Mono size={7} tracking={0.3} color={ink(0.55)}>
           ASKED TO STAND ON YOUR RAIL
         </Mono>
       </Box>
-      <Box r={20} t={1032}>
+      <Box r={20} t={1030}>
         <Mono size={7} tracking={0.12} color={ink(0.32)}>
           REQUESTS RUN BOTH WAYS
         </Mono>
       </Box>
 
-      {REQUESTS_IN.map((request, i) => {
-        const top = REQ_IN_TOP + i * REQ_IN_PITCH;
-        return (
-          <Box key={request.handle} l={0} t={0} w={420}>
-            <RequestInRow
-              request={request}
-              top={top}
-              admitted={letIn.includes(request.handle)}
-              onAdmit={() => {
-                tap();
-                setLetIn((prev) => [...prev, request.handle]);
-              }}
-            />
-            {i < REQUESTS_IN.length - 1 ? (
-              <Rule l={20} t={top + 40} w={380} color={ink(0.1)} />
-            ) : null}
-          </Box>
-        );
-      })}
+      {REQUESTS_IN.map((request, i) => (
+        <RequestInRow
+          key={request.handle}
+          request={request}
+          top={REQ_IN_TOP + i * REQ_IN_PITCH}
+          divider={i < REQUESTS_IN.length - 1}
+          admitted={letIn.includes(request.handle)}
+          onAdmit={() => {
+            tap();
+            setLetIn((prev) => [...prev, request.handle]);
+          }}
+        />
+      ))}
 
       <Box l={20} t={1150}>
         <Mono size={7} tracking={0.3} color={ink(0.5)}>
           YOU ASKED TO STAND ON THEIRS
         </Mono>
       </Box>
-      {REQUESTS_OUT.map((request, i) => {
-        const top = REQ_OUT_TOP + i * REQ_OUT_PITCH;
-        return (
-          <Box key={request.handle} l={0} t={0} w={420}>
-            <RequestOutRow request={request} top={top} />
-            {i < REQUESTS_OUT.length - 1 ? (
-              <Rule l={20} t={top + 30} w={380} color={ink(0.1)} />
-            ) : null}
-          </Box>
-        );
-      })}
+      {REQUESTS_OUT.map((request, i) => (
+        <RequestOutRow
+          key={request.handle}
+          request={request}
+          top={REQ_OUT_TOP + i * REQ_OUT_PITCH}
+          divider={i < REQUESTS_OUT.length - 1}
+        />
+      ))}
 
       {/*
         NOT YET ON YOUR RAIL, 1256 → 1402. A suggestion with no reason is an
         algorithm asking for trust, so every one of these is a fact about a room
         you were both standing in. The row opens the person; the cell asks them.
       */}
-      <Rule l={0} t={1256} w={420} color={ink(0.28)} />
-      <Box l={20} t={1272}>
-        <Mono size={7} tracking={0.3} color={ink(0.5)}>
+      <Rule l={0} t={1256} w={420} color={ink(0.2)} />
+      <Box l={20} t={1270}>
+        <Mono size={7} tracking={0.3} color={ink(0.55)}>
           NOT YET ON YOUR RAIL
         </Mono>
       </Box>
-      <Box r={20} t={1272}>
+      <Box r={20} t={1270}>
         <Mono size={7} tracking={0.12} color={ink(0.32)}>
           THEY HAVE SAT AT YOUR TABLE, NEVER ON YOUR RAIL
         </Mono>
       </Box>
-      {SUGGESTIONS.map((person, i) => {
-        const top = SUGGEST_TOP + i * SUGGEST_PITCH;
-        return (
-          <Box key={person.handle} l={0} t={0} w={420}>
-            <SuggestionRow
-              person={person}
-              top={top}
-              asked={asked.includes(person.handle)}
-              onOpen={() => {
-                tap();
-                router.push('/profile');
-              }}
-              onAsk={() => {
-                tap();
-                setAsked((prev) => [...prev, person.handle]);
-              }}
-            />
-            {i < SUGGESTIONS.length - 1 ? (
-              <Rule l={20} t={top + 30} w={380} color={ink(0.1)} />
-            ) : null}
-          </Box>
-        );
-      })}
+      {SUGGESTIONS.map((person, i) => (
+        <SuggestionRow
+          key={person.handle}
+          person={person}
+          top={SUGGEST_TOP + i * SUGGEST_PITCH}
+          divider={i < SUGGESTIONS.length - 1}
+          asked={asked.includes(person.handle)}
+          onOpen={() => {
+            tap();
+            router.push('/profile');
+          }}
+          onAsk={() => {
+            tap();
+            setAsked((prev) => [...prev, person.handle]);
+          }}
+        />
+      ))}
 
       {/*
         ADD SOMEONE BY HANDLE, 1420 → 1554. A ruled field, not a search box: the
@@ -486,10 +524,16 @@ export default function FriendsScreen() {
         capsule, no fill, no magnifier, no rounded corner. The invite is real:
         press it and the field empties and says who you asked, and that they are
         the ones who decide.
+
+        TWO PATHS, ONE FUNCTION, EACH ONE GESTURE. `returnKeyType="send"` runs
+        `invite` from the keyboard, and the slab runs it on the frame the finger
+        lifts — one tap, never a tap to dismiss the keyboard and a second to
+        press. It is a live responder whenever the field has something in it,
+        which is exactly the state the keyboard is up in.
       */}
-      <Rule l={0} t={ADD.rule} w={420} color={ink(0.28)} />
+      <Rule l={0} t={ADD.rule} w={420} color={ink(0.2)} />
       <Box l={20} t={ADD.eyebrow}>
-        <Mono size={7} tracking={0.3} color={ink(0.5)}>
+        <Mono size={7} tracking={0.3} color={ink(0.55)}>
           ADD SOMEONE BY HANDLE
         </Mono>
       </Box>
@@ -538,6 +582,7 @@ export default function FriendsScreen() {
         accessibilityRole="button"
         accessibilityLabel="Invite by handle"
         accessibilityState={{ disabled: !ready }}
+        hitSlop={{ top: 8, bottom: 8, left: 8, right: 8 }}
         style={({ pressed }) => ({
           position: 'absolute',
           right: 20,
@@ -639,10 +684,12 @@ function PresenceBust({
 function LedgerRow({
   person,
   top,
+  divider,
   onPress,
 }: {
   person: RailPerson;
   top: number;
+  divider: boolean;
   onPress: () => void;
 }) {
   const onNow = person.status === 'table' || person.status === 'rail';
@@ -656,52 +703,55 @@ function LedgerRow({
     );
 
   return (
-    <Pressable
-      onPress={onPress}
-      accessibilityRole="button"
-      accessibilityLabel={`${person.name}, ${chips(person.together)} hands watched together`}
-      style={({ pressed }) => ({
-        position: 'absolute',
-        left: 0,
-        top: top - 6,
-        width: 420,
-        height: 62,
-        backgroundColor: pressed ? SURFACE.press : undefined,
-      })}
-    >
-      <Bust
-        l={20}
-        t={6}
-        size={28}
-        emoji={person.face}
-        frame={onNow ? 'lit' : 'rest'}
-        opacity={onNow ? 1 : 0.7}
-      />
-      <Box l={58} t={8}>
-        <Sans size={12} weight={500} color={ink(onNow ? 1 : 0.8)}>
-          {person.name}
-        </Sans>
-      </Box>
-      <Box l={58} t={26}>
-        <Mono size={7.5} tracking={0.12} color={ink(0.4)}>
-          RAILED YOU {chips(person.railedYou)} · YOU RAILED {chips(person.youRailed)}
-        </Mono>
-      </Box>
-      {person.where ?? person.lastSeen ? (
-        <Box l={58} t={40}>
-          <Mono size={7} tracking={0.12} color={ink(0.26)}>
-            {person.where ?? person.lastSeen}
+    <>
+      <Pressable
+        onPress={onPress}
+        accessibilityRole="button"
+        accessibilityLabel={`${person.name}, ${chips(person.together)} hands watched together`}
+        style={({ pressed }) => ({
+          position: 'absolute',
+          left: 0,
+          top: top - 6,
+          width: 420,
+          height: 62,
+          backgroundColor: pressed ? SURFACE.press : undefined,
+        })}
+      >
+        <Bust
+          l={20}
+          t={6}
+          size={28}
+          emoji={person.face}
+          frame={onNow ? 'lit' : 'rest'}
+          opacity={onNow ? 1 : 0.7}
+        />
+        <Box l={58} t={8}>
+          <Sans size={12} weight={500} color={ink(onNow ? 1 : 0.8)}>
+            {person.name}
+          </Sans>
+        </Box>
+        <Box l={58} t={26}>
+          <Mono size={7} tracking={0.12} color={ink(0.4)}>
+            RAILED YOU {chips(person.railedYou)} · YOU RAILED {chips(person.youRailed)}
           </Mono>
         </Box>
-      ) : null}
-      {card}
-      <Box r={20} t={8}>
-        <Mono size={12} weight={500} color={ink(0.85)}>
-          {chips(person.together)}
-        </Mono>
-      </Box>
-      <Ticks r={20} t={28} w={tickW} h={8} pitch={4} color={ink(0.3)} />
-    </Pressable>
+        {person.where ?? person.lastSeen ? (
+          <Box l={58} t={40}>
+            <Mono size={7} tracking={0.12} color={ink(0.26)}>
+              {person.where ?? person.lastSeen}
+            </Mono>
+          </Box>
+        ) : null}
+        {card}
+        <Box r={20} t={8}>
+          <Mono size={12} weight={500} color={ink(0.85)}>
+            {chips(person.together)}
+          </Mono>
+        </Box>
+        <Ticks r={20} t={28} w={tickW} h={8} pitch={4} color={ink(0.3)} />
+      </Pressable>
+      {divider ? <Rule l={20} t={top + 50} w={380} color={ink(0.1)} /> : null}
+    </>
   );
 }
 
@@ -709,93 +759,115 @@ function LedgerRow({
 function RequestInRow({
   request,
   top,
+  divider,
   admitted,
   onAdmit,
 }: {
   request: RailRequest;
   top: number;
+  divider: boolean;
   admitted: boolean;
   onAdmit: () => void;
 }) {
   return (
-    <Box l={0} t={top} w={420} h={40}>
-      <Bust
-        l={20}
-        t={0}
-        size={26}
-        emoji={request.face}
-        frame={admitted ? 'lit' : 'crowd'}
-        opacity={admitted ? 1 : 0.65}
-      />
-      <Box l={56} t={1}>
-        <Sans size={11.5} weight={500} color={ink(admitted ? 1 : 0.9)}>
-          {request.name}
-        </Sans>
-      </Box>
-      <Box l={56} t={16}>
-        <Mono size={7} tracking={0.12} color={ink(0.38)}>
-          {request.reason}
-        </Mono>
-      </Box>
-      <Box l={56} t={28}>
-        <Mono size={7} tracking={0.12} color={ink(0.26)}>
-          {request.sent} · {chips(request.together)} HANDS TOGETHER
-        </Mono>
-      </Box>
-      {admitted ? (
-        <Box r={20} t={13}>
-          <Mono size={7} tracking={0.24} color={ink(0.5)}>
-            ON YOUR RAIL
+    <>
+      {/*
+        The row's own frame, 44 units of the 46-unit pitch: the three agate lines
+        occupy 40 of them and the last four are the admit slab's reach, so the
+        target and its slop are inside the parent that has to deliver the touch.
+      */}
+      <Box l={0} t={top} w={420} h={44}>
+        <Bust
+          l={20}
+          t={0}
+          size={26}
+          emoji={request.face}
+          frame={admitted ? 'lit' : 'crowd'}
+          opacity={admitted ? 1 : 0.65}
+        />
+        <Box l={56} t={1}>
+          <Sans size={11} weight={500} color={ink(admitted ? 1 : 0.9)}>
+            {request.name}
+          </Sans>
+        </Box>
+        <Box l={56} t={16}>
+          <Mono size={7} tracking={0.12} color={ink(0.38)}>
+            {request.reason}
           </Mono>
         </Box>
-      ) : (
-        <Pressable
-          onPress={onAdmit}
-          accessibilityRole="button"
-          accessibilityLabel={`Let ${request.name} in`}
-          style={({ pressed }) => ({
-            position: 'absolute',
-            right: 20,
-            top: 4,
-            width: 104,
-            height: 30,
-            borderWidth: 1,
-            borderColor: ink(0.35),
-            alignItems: 'center',
-            justifyContent: 'center',
-            backgroundColor: pressed ? SURFACE.press : undefined,
-          })}
-        >
-          <Sans size={11} weight={500} color={ink(0.85)}>
-            Let them in
-          </Sans>
-        </Pressable>
-      )}
-    </Box>
+        <Box l={56} t={28}>
+          <Mono size={7} tracking={0.12} color={ink(0.26)}>
+            {request.sent} · {chips(request.together)} HANDS TOGETHER
+          </Mono>
+        </Box>
+        {admitted ? (
+          <Box r={20} t={13}>
+            <Mono size={7} tracking={0.24} color={ink(0.5)}>
+              ON YOUR RAIL
+            </Mono>
+          </Box>
+        ) : (
+          <Pressable
+            onPress={onAdmit}
+            accessibilityRole="button"
+            accessibilityLabel={`Let ${request.name} in`}
+            hitSlop={{ top: 4, bottom: 10, left: 8, right: 8 }}
+            style={({ pressed }) => ({
+              position: 'absolute',
+              right: 20,
+              top: 4,
+              width: 104,
+              height: 30,
+              borderWidth: 1,
+              borderColor: ink(0.35),
+              alignItems: 'center',
+              justifyContent: 'center',
+              backgroundColor: pressed ? SURFACE.press : undefined,
+            })}
+          >
+            <Sans size={11} weight={500} color={ink(0.85)}>
+              Let them in
+            </Sans>
+          </Pressable>
+        )}
+      </Box>
+      {divider ? <Rule l={20} t={top + 40} w={380} color={ink(0.1)} /> : null}
+    </>
   );
 }
 
 /** You asked. They decide, so the row ends in a fact instead of a control. */
-function RequestOutRow({ request, top }: { request: RailRequest; top: number }) {
+function RequestOutRow({
+  request,
+  top,
+  divider,
+}: {
+  request: RailRequest;
+  top: number;
+  divider: boolean;
+}) {
   return (
-    <Box l={0} t={top} w={420} h={30}>
-      <Bust l={20} t={0} size={22} emoji={request.face} frame="crowd" opacity={0.5} />
-      <Box l={52} t={0}>
-        <Sans size={11} weight={500} color={ink(0.75)}>
-          {request.name}
-        </Sans>
+    <>
+      <Box l={0} t={top} w={420} h={30}>
+        <Bust l={20} t={0} size={22} emoji={request.face} frame="crowd" opacity={0.5} />
+        <Box l={52} t={0}>
+          <Sans size={11} weight={500} color={ink(0.75)}>
+            {request.name}
+          </Sans>
+        </Box>
+        <Box l={52} t={15}>
+          <Mono size={7} tracking={0.12} color={ink(0.32)}>
+            {request.reason}
+          </Mono>
+        </Box>
+        <Box r={20} t={6}>
+          <Mono size={7} tracking={0.12} color={ink(0.3)}>
+            ASKED · {request.sent}
+          </Mono>
+        </Box>
       </Box>
-      <Box l={52} t={15}>
-        <Mono size={7} tracking={0.12} color={ink(0.32)}>
-          {request.reason}
-        </Mono>
-      </Box>
-      <Box r={20} t={6}>
-        <Mono size={7} tracking={0.12} color={ink(0.3)}>
-          ASKED · {request.sent}
-        </Mono>
-      </Box>
-    </Box>
+      {divider ? <Rule l={20} t={top + 30} w={380} color={ink(0.1)} /> : null}
+    </>
   );
 }
 
@@ -803,22 +875,30 @@ function RequestOutRow({ request, top }: { request: RailRequest; top: number }) 
 function SuggestionRow({
   person,
   top,
+  divider,
   asked,
   onOpen,
   onAsk,
 }: {
   person: RailSuggestion;
   top: number;
+  divider: boolean;
   asked: boolean;
   onOpen: () => void;
   onAsk: () => void;
 }) {
   return (
-    <Box l={0} t={0} w={420}>
+    <>
       <Pressable
         onPress={onOpen}
         accessibilityRole="button"
         accessibilityLabel={person.name}
+        /*
+          Slop to the pitch and no further: the rows are 42 units apart and drawn
+          38 tall, so 2 units above and below is the whole gap — any more and the
+          row above would answer for the finger that meant the row below.
+        */
+        hitSlop={{ top: 2, bottom: 2, left: 8, right: 8 }}
         style={({ pressed }) => ({
           position: 'absolute',
           left: 0,
@@ -851,6 +931,7 @@ function SuggestionRow({
           onPress={onAsk}
           accessibilityRole="button"
           accessibilityLabel={`Ask ${person.name} onto your rail`}
+          hitSlop={{ top: 8, bottom: 8, left: 8, right: 8 }}
           style={({ pressed }) => ({
             position: 'absolute',
             right: 20,
@@ -869,6 +950,7 @@ function SuggestionRow({
           </Sans>
         </Pressable>
       )}
-    </Box>
+      {divider ? <Rule l={20} t={top + 30} w={380} color={ink(0.1)} /> : null}
+    </>
   );
 }

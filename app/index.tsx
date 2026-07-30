@@ -1,4 +1,4 @@
-import { useEffect, useRef, useState } from 'react';
+import { useCallback, useEffect, useRef, useState } from 'react';
 import { AccessibilityInfo, Pressable, useWindowDimensions, View } from 'react-native';
 import { useRouter } from 'expo-router';
 import Animated, {
@@ -37,8 +37,17 @@ import { CANVAS_W, GROUND, ink, MS } from '@/design/tokens';
  * *table's* time — a clock counting a person's decision — and expression, the
  * crowd and a throw. This meter measures the app's own readiness, which is
  * neither, and it stands 42 units under the mark, inside its clear space. So
- * bone at ink(0.3), consistent with §4's "no amber" and with §9's count of
- * exactly two amber marks across the whole shell: HOME's 0:06 and FRIENDS' crowd.
+ * bone at ink(0.3), consistent with §4's "no amber": the shell's amber is HOME's
+ * 0:11 clock and the crowd marks, and the boot has neither.
+ *
+ * ROUTE — the boot is the route at '/', and it ends in router.replace('/home'),
+ * so back never returns here. §4 describes it as an overlay above the Stack;
+ * this is the deliberate deviation, and it is the shape the nav is built for.
+ *
+ * NEVER BLOCKS — the boot runs on mount and always reaches /home. It is not
+ * gated on AccessibilityInfo: that answer only chooses between the animated path
+ * and the cut, so a slow, hung or rejected query costs the animation, never the
+ * app. The tap is armed at declaration, before any effect runs.
  *
  * FRAME — not a <Screen>. Scroll-mode scaling (width / 420), top-anchored under
  * the top inset, because fit-mode scale is smaller than widthScale on every
@@ -65,8 +74,12 @@ const MARK = {
   positioningT: 530,
   meterT: 552,
   meterW: 126,
-  /** The meter's span. Elapsed time, not a ladder stop — it is a declared meter. */
-  meterMs: 900,
+  /**
+   * The meter's span: the dwell, so it fills exactly as the dwell ends. It runs
+   * on elapsed time, which is what makes it a declared meter and exempt from the
+   * ladder (law 6) — MS.skip is the length it measures, not a curve it is on.
+   */
+  meterMs: MS.skip,
 } as const;
 
 /** 44 → HOME's 20. Letter-spacing scales with the transform, so .26em holds exactly. */
@@ -91,10 +104,30 @@ export default function BootScreen() {
 
   /** The meter is not a shared value: it runs on elapsed time, in state, at 100ms. */
   const [meter, setMeter] = useState(0);
-  /** null until AccessibilityInfo answers; until then the screen is the ground it began as. */
-  const [reduceMotion, setReduceMotion] = useState<boolean | null>(null);
-  /** A tap anywhere skips the dwell. Nothing in this app blocks input, including this. */
-  const skip = useRef<() => void>(() => {});
+  /**
+   * The rest frame: drawn complete the moment the OS says it wants reduced
+   * motion. State, because it is a render decision (the meter is drawn full).
+   */
+  const [restFrame, setRestFrame] = useState(false);
+  /**
+   * The same answer as a ref, because the beats read it at each decision point
+   * rather than being scheduled by it. It starts false — the animated path — so
+   * the boot never waits, and an answer that arrives mid-build still lands on
+   * the cut.
+   */
+  const reduceMotion = useRef(false);
+  /** The handoff, once, from whichever path reaches it first. */
+  const entered = useRef(false);
+  const enter = useCallback(() => {
+    if (entered.current) return;
+    entered.current = true;
+    router.replace('/home');
+  }, [router]);
+  /**
+   * A tap anywhere skips the dwell. Armed at declaration with the handoff
+   * itself, so it is never inert — not before the effects run, not ever.
+   */
+  const skip = useRef<() => void>(enter);
 
   const s = width / CANVAS_W;
   const canvasUnits = s > 0 ? (winHeight - insets.top) / s : 0;
@@ -104,15 +137,32 @@ export default function BootScreen() {
    */
   const navRuleY = s > 0 ? (winHeight - insets.bottom - NAV_H * s - insets.top) / s : MARK.railY;
 
+  /**
+   * The accessibility query, asked alongside the boot rather than in front of it.
+   * A "no" and a rejection are the same thing here — the animated path, which is
+   * already running — so only a "yes" does anything: it snaps the rail whole and
+   * the meter full, and the travel becomes a cut. Nothing waits on this.
+   */
   useEffect(() => {
     let alive = true;
-    AccessibilityInfo.isReduceMotionEnabled()
-      .then((on) => alive && setReduceMotion(on))
-      .catch(() => alive && setReduceMotion(false));
+    try {
+      Promise.resolve(AccessibilityInfo.isReduceMotionEnabled()).then(
+        (on) => {
+          if (!alive || !on) return;
+          reduceMotion.current = true;
+          setRestFrame(true);
+          // Assigning cancels the build in flight: the rest frame, drawn complete.
+          build.value = 1;
+        },
+        () => {},
+      );
+    } catch {
+      // A query that throws is still just "no": it must not take the boot with it.
+    }
     return () => {
       alive = false;
     };
-  }, []);
+  }, [build]);
 
   /**
    * The meter. Elapsed time from the frame the screen starts, monotonic, and
@@ -122,11 +172,6 @@ export default function BootScreen() {
    * rest frame.
    */
   useEffect(() => {
-    if (reduceMotion === null) return;
-    if (reduceMotion) {
-      setMeter(1);
-      return;
-    }
     const t0 = Date.now();
     const id = setInterval(() => {
       const p = Math.min(1, (Date.now() - t0) / MARK.meterMs);
@@ -134,7 +179,7 @@ export default function BootScreen() {
       if (p >= 1) clearInterval(id);
     }, 100);
     return () => clearInterval(id);
-  }, [reduceMotion]);
+  }, []);
 
   /**
    * The beats. Every shared value is written in here, never during render.
@@ -158,32 +203,33 @@ export default function BootScreen() {
    * centre, wordmark set, positioning line, meter full — it holds MS.skip, and
    * the travel becomes a cut. The handoff still happens, on one route fade and
    * nothing else. No build, no travel.
+   *
+   * This runs once, on mount, and depends on nothing that can fail to arrive.
    */
   useEffect(() => {
-    if (reduceMotion === null) return;
-
     const start = Date.now();
     let dwell: ReturnType<typeof setTimeout> | undefined;
     let travel: ReturnType<typeof setTimeout> | undefined;
-    let left = false;
+    let exiting = false;
 
     const leave = () => {
-      if (left) return;
-      left = true;
+      if (exiting || entered.current) return;
+      exiting = true;
       if (dwell) clearTimeout(dwell);
-      if (reduceMotion) {
-        router.replace('/home');
+      dwell = undefined;
+      if (reduceMotion.current) {
+        enter();
         return;
       }
       ephemera.value = withTiming(0, { duration: MS.exit, easing: EASE.out });
       hand.value = withTiming(1, { duration: MS.travel, easing: EASE.slide });
-      travel = setTimeout(() => router.replace('/home'), MS.travel);
+      travel = setTimeout(enter, MS.travel);
     };
 
     skip.current = () => {
-      if (left) return;
+      if (exiting || entered.current) return;
       // If the rail is still building it completes over MS.punch / EASE.out first.
-      if (!reduceMotion && Date.now() - start < MS.join) {
+      if (!reduceMotion.current && Date.now() - start < MS.join) {
         build.value = withTiming(1, { duration: MS.punch, easing: EASE.out });
         if (dwell) clearTimeout(dwell);
         dwell = setTimeout(leave, MS.punch);
@@ -192,14 +238,17 @@ export default function BootScreen() {
       leave();
     };
 
-    build.value = reduceMotion ? 1 : withTiming(1, { duration: MS.join, easing: EASE.slide });
+    build.value = withTiming(1, { duration: MS.join, easing: EASE.slide });
     dwell = setTimeout(leave, MS.skip);
 
     return () => {
+      // Nothing may hand off, or start an exit, after this screen is gone.
+      exiting = true;
+      skip.current = () => {};
       if (dwell) clearTimeout(dwell);
       if (travel) clearTimeout(travel);
     };
-  }, [reduceMotion, router, build, hand, ephemera]);
+  }, [enter, build, hand, ephemera]);
 
   /** The rule's y: 510 → the y the nav draws its line on. */
   const railStyle = useAnimatedStyle(() => ({
@@ -307,7 +356,7 @@ export default function BootScreen() {
             <Ticks
               l={MARK.wordL}
               t={MARK.meterT}
-              w={MARK.meterW * meter}
+              w={MARK.meterW * (restFrame ? 1 : meter)}
               h={8}
               pitch={9}
               tickWidth={1}

@@ -40,31 +40,46 @@ available.
 
 ## The screens
 
-Twelve routes. You enter at `app/index.tsx` — the boot mark, which draws the object the app is
-named after and hands off by *becoming the navigation*: the line walks down to the foot of the
-screen and is the rail, the wordmark walks up into HOME's masthead, and it `replace()`s to
-`/home`, so back never returns to a splash.
+**Twelve routes: one boot, four destinations, seven pushed screens.**
 
-Four of the twelve are **destinations** and carry the rail — one 2px hairline across the bottom,
-broken by a 58-unit notch cut where you are standing. The other seven are screens you were
-pushed into to do one thing, and they carry a `LeaveMark` instead: a 2px stub *added* to their
-own top hairline, the notch inverted. `src/components/AppShell.tsx` owns both, reads the
-pathname itself, and cannot be notched wrongly.
+You enter at `/` — `app/index.tsx`, the boot mark, which draws the object the app is named after and
+hands off by *becoming the navigation*. The line walks down to the foot of the screen and is the rail;
+the wordmark walks up to (20, 20) and is HOME's masthead; the 58-unit gap in the line travels to
+23 → 81, which is HOME's notch in the nav bar. Then it `router.replace()`s to `/home`, so back never
+returns to a splash. `/` is a route rather than an overlay, and it is not a place you can stand.
+
+**The nav device is the notch, and the app owns no other selected state.** The four destinations carry
+the rail: one 2px hairline across the bottom of the app, broken by a 58-unit gap cut where you are
+standing, with four mono words hanging off it. Selection is a *subtraction* — the line makes room for
+you — plus the label stepping from `ink(0.34)`/400 to `ink()`/500. There is no pill, no fill, no
+underline, no dot, no badge, no icon and no amber. The gap exists at **three scales and nowhere else**:
+58 units in the nav bar (and the same 58 in the app icon and the boot mark), 53 or 30 units in a
+masthead rule under the active half of `LISTINGS · PLAN`, and the seat cut into the table boundary.
+
+The seven pushed screens hide the bar and carry a `LeaveMark` instead: a 2px stub **added** to their
+own top hairline — the notch inverted, because a subtraction says *you are here*. No arrow, no
+chevron. `src/components/AppShell.tsx` owns the bar, the masthead and the leave mark; it reads the
+pathname itself, so nothing can be placed or notched wrongly.
 
 | Route | Ask | What it is |
 |---|---|---|
 | `/` | shell §4 | The boot mark. Not a place you can stand — it hands off to `/home` and leaves no history. |
-| `/home` | shell §5 | **Destination.** The door, not the dashboard: are my people playing, and do I walk in. |
+| `/home` | shell §5 | **Destination.** The door, not the dashboard: are my people playing, and do I walk in. One figure, one sentence, one press. |
 | `/tables` | shell §6 | **Destination.** The listings. Noise is the sort order; `PLAN` in its masthead is `/floor`. |
 | `/feed` | 6a | **Destination.** The edition — a masthead, one lead hand with a verdict, everything else in agate. |
-| `/friends` | shell §7 | **Destination.** Your rail as an object: presence drawn on the line, and the ledger under it. |
-| `/floor` | 7a | The lobby, drawn as a plan you walk — TABLES' second register, not a screen of its own. |
+| `/friends` | shell §7 | **Destination.** Your rail as an object: presence drawn on the line, and the ledger of who stood there under it. |
+| `/floor` | 7a | The lobby, drawn as a plan you walk — TABLES' second register, not a screen of its own, so the way back is the notch in its own masthead. |
 | `/table` | 1a, 2a–2f, 3b, 4a/4b | Six-max mid-hand: action bar in four states, the slide rule, drag-to-throw, the showdown. |
 | `/rail` | 5a, 5b, 5c | Watching from outside the line. Swipe up for the tape, take a seat to join. |
-| `/clip` | 6b | Reactions pinned to the second they landed. The scrub is the bet slider again. |
-| `/profile` | 8a | The record: hands watched counted alongside hands played. |
-| `/loadout` | 8b | Four slots where earned and purchased sit adjacent. |
+| `/clip` | 6b | Reactions pinned to the second they landed. The scrub is the bet slider again, at 6b's own tick pitch. |
+| `/profile` | 8a | The record: hands **watched** is the one large figure, and hands played opens the list under it. |
+| `/loadout` | 8b | Four slots where earned and purchased sit adjacent, and a live preview of what lands on a face. |
 | `/shop` | 8c | The counter — dated stock, flat prices, and a section for what money cannot buy. |
+
+The four destinations are **HOME, TABLES, FEED and FRIENDS**, in that order across the bar, in cells
+of 104 / 120 / 92 / 104 units sized to their words rather than to 420/4. Every destination's canvas
+ends with at least 64 units of empty ground below its last ink, which is how the bar is paid for
+without `Screen.tsx` knowing it exists.
 
 ## How it is built
 
@@ -78,7 +93,7 @@ src/components/table/ the table's own pieces: Surface, Instruments, Targeting, F
 src/state/           the scripted hand, the meters, the showdown clock
 src/data/            fixtures (every figure the design was reviewed with), the social
                      fixtures behind the four destinations, and table geometry
-docs/                the shell spec, the design notes and the PRD
+docs/                PRD.md, DESIGN.md, APP-SHELL-SPEC.md — see below
 project/             the original design handoff — read `project/RAIL Table.dc.html`
 chats/               the conversation the design came out of
 ```
@@ -90,8 +105,10 @@ reflows.
 
 **Motion** comes from ask 9's spec rather than from taste: five named curves and an
 eleven-stop duration ladder in `src/design/tokens.ts`, used through `src/design/motion.ts`. A
-transition outside the ladder is a bug. The clock and the cooldown are declared meters — they
-run on elapsed time and are the only things that loop.
+transition outside the ladder is a bug. Meters — a clock, a cooldown, a loading progress — run on
+elapsed time and are exempt, because a clock cannot lie. Nothing in the app is animated on a loop; the
+one looping meter is HOME's door clock, which re-arms at zero because the room it stands outside always
+has somebody to act.
 
 **State** is a scripted hand (`src/state/useTable.ts`), not a poker engine. The handoff
 specifies one hand drawn to the chip, and a prototype that dealt random cards would stop
@@ -99,10 +116,29 @@ matching the screens it exists to prove. So: fold and you sit out as a railbird 
 table; call and you take the 4a win; shove and you run into the straight flush of 4b. Each new
 hand re-deals the same scripted hand.
 
+## The three documents, and what each is for
+
+- **`docs/PRD.md`** — what the product is, screen by screen, and what it refuses to be. §6 says what
+  every route does; §13 is the non-goals; §15 is honest about the distance to a shippable build, where
+  the hand engine is the blocker.
+- **`docs/DESIGN.md`** — the design law and the argument underneath it: ten rules, the token system,
+  the recurring objects, the motion ladder. **§6.10 is the section to read before you "fix" anything.**
+  It records the seven places the handoff, the shell spec and the law disagree, with the argument on
+  both sides, so a deliberate deviation is not mistaken for drift. §9 lists the drift nobody has
+  decided yet.
+- **`docs/APP-SHELL-SPEC.md`** — the canonical geometry, in design units, of the parts the handoff did
+  not draw: the navigation bar, the boot, and HOME, TABLES and FRIENDS. It was written before the shell
+  existed and has since been reconciled against the build; where the build chose differently the line
+  is marked `BUILT` with the reason.
+
+Where a document and the code disagree, the code is what ships and the document is the bug.
+
 ## Decisions worth knowing about
 
-Three places needed a judgement call rather than a transcription. All three are commented at
-the point they apply.
+Three translation calls are worth knowing before you read any screen. `docs/DESIGN.md` §6 carries all
+ten, and §6.10 carries the seven declared deviations — including the six places an audit read the law
+without the handoff in front of it and flagged something the handoff explicitly specifies. All of them
+are commented at the point they apply.
 
 **Seats are busts, and the name block reads under them.** 1a still draws seats as the flat
 name plates it was built with; every panel from ask 3 onward draws them as busts, and the
@@ -128,3 +164,9 @@ space, which is what the prototype's 44px band and 878px pill were standing in f
 Positioning is "social poker rooms with friends, play chips only". Chips are non-transferable
 and have no value. No label, button or empty state implies money can be won, deposited or
 withdrawn — this shapes what things are named, not just what disclaimers say.
+
+It is stated rather than disclaimed: **all four destinations end on it**, in mono agate at the foot of
+the document, in the app's own voice — two lines read from one `CONSTRAINT` object in
+`src/data/social.ts`, so no screen can word it differently. Credits (`CR`) buy objects and never
+chips, and the invite field on FRIENDS carries `NOBODY CAN SEND CHIPS` in its own corner, which is
+exactly where somebody would expect to be able to violate it.

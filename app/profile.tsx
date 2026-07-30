@@ -24,9 +24,23 @@ import { ink, SURFACE } from '@/design/tokens';
  * is not drawn over it, because the record is a thing you came here to read
  * rather than a room you stand in. The two rooms it does open — the loadout, and
  * the counter through it — are pressed from inside it and hand you back here.
+ *
+ * THE FIGURE. The record is the one screen that is entirely about figures, and it
+ * used to set its largest one at mono 14 — six career rows at one size, with the
+ * screen's thesis buried in the second of them. So the career figure that carries
+ * the thesis is set once, large, in the app's own grammar (mono eyebrow, then the
+ * numeral): HANDS WATCHED, not played, right-ranged in the identity band where
+ * the ground was already empty. It is lifted out of the row list rather than
+ * duplicated in it, so the list below now opens on HANDS PLAYED and the contrast
+ * between the two is the argument. Nothing else moved.
  */
+/** The career figure the record is an argument about. */
+const THESIS = 'HANDS WATCHED';
+
 export default function ProfileScreen() {
   const router = useRouter();
+  const watched = RECORD.career.find(([label]) => label === THESIS)?.[1] ?? '';
+  const rows = RECORD.career.filter(([label]) => label !== THESIS);
 
   return (
     <Screen height={870} mode="scroll">
@@ -56,6 +70,19 @@ export default function ProfileScreen() {
         </Mono>
       </Box>
 
+      {/* The screen's one large figure, in the empty ground right of the identity
+          block: the agate lines beside it end at x≈284 and this ranges from 400. */}
+      <Box r={20} t={112}>
+        <Mono size={7} tracking={0.3} color={ink(0.5)}>
+          {THESIS}
+        </Mono>
+      </Box>
+      <Box r={20} t={126}>
+        <Mono size={30} weight={700} tracking={-0.04} lh={0.9}>
+          {watched}
+        </Mono>
+      </Box>
+
       <Box l={20} t={170} w={376}>
         <Sans size={16} weight={500} tracking={-0.01} lh={1.32}>
           {RECORD.line}
@@ -69,12 +96,14 @@ export default function ProfileScreen() {
         </Mono>
       </Box>
       <Box r={20} t={244}>
-        <Mono size={7} tracking={0.12} color={ink(0.3)}>
+        <Mono size={7} tracking={0.12} color={ink(0.32)}>
           SINCE MAR
         </Mono>
       </Box>
 
-      {RECORD.career.map(([label, value], i) => (
+      {/* The dense zone: the rest of the career at one size, hands played first,
+          so the figure above is the thing it is measured against. */}
+      {rows.map(([label, value], i) => (
         <View key={label}>
           <Box l={20} t={271 + i * 28}>
             <Mono size={8} tracking={0.14} color={ink(0.45)}>
@@ -86,20 +115,18 @@ export default function ProfileScreen() {
               {value}
             </Mono>
           </Box>
-          {i < RECORD.career.length - 1 ? (
-            <Rule l={20} t={288 + i * 28} w={380} color={ink(0.1)} />
-          ) : null}
+          {i < rows.length - 1 ? <Rule l={20} t={288 + i * 28} w={380} color={ink(0.1)} /> : null}
         </View>
       ))}
 
       <Rule l={0} t={436} w={420} color={ink(0.2)} />
       <Box l={20} t={450}>
-        <Mono size={7} tracking={0.3} color={ink(0.6)}>
+        <Mono size={7} tracking={0.3} color={ink(0.55)}>
           EARNED · {RECORD.earnedCount}
         </Mono>
       </Box>
       <Box r={20} t={450}>
-        <Mono size={7} tracking={0.12} color={ink(0.35)}>
+        <Mono size={7} tracking={0.12} color={ink(0.32)}>
           STRUCK FROM PLAY · NEVER FOR SALE
         </Mono>
       </Box>
@@ -117,12 +144,12 @@ export default function ProfileScreen() {
 
       <Rule l={0} t={624} w={420} color={ink(0.2)} />
       <Box l={20} t={638}>
-        <Mono size={7} tracking={0.3} color={ink(0.6)}>
+        <Mono size={7} tracking={0.3} color={ink(0.55)}>
           PURCHASED · {RECORD.purchasedCount}
         </Mono>
       </Box>
       <Box r={20} t={638}>
-        <Mono size={7} tracking={0.12} color={ink(0.35)}>
+        <Mono size={7} tracking={0.12} color={ink(0.32)}>
           MAKER&apos;S MARK · NO PROVENANCE
         </Mono>
       </Box>
@@ -151,19 +178,23 @@ export default function ProfileScreen() {
 
       <Rule l={0} t={816} w={420} color={ink(0.14)} />
       <Box l={20} t={830} w={380}>
-        <Mono size={7} tracking={0.1} color={ink(0.4)} lh={1.7}>
+        <Mono size={7} tracking={0.12} color={ink(0.32)} lh={1.7}>
           EVERY EARNED ITEM CARRIES THE HAND IT CAME FROM · PURCHASED ONES CARRY AN EDITION{'\n'}
           NO ITEM ON EITHER SHELF CHANGES A CARD, A BET, OR A CLOCK
         </Mono>
       </Box>
 
+      {/* The way to the loadout. Helvetica sentence-case, because that is what a
+          press is in this app — the mono cells on /loadout are its controls, not
+          its routes, and the spec's route map names this one `Change loadout`. */}
       <Pressable
         onPress={() => router.push('/loadout')}
+        accessibilityRole="button"
         style={({ pressed }) => ({
           position: 'absolute',
           right: 20,
           top: 74,
-          width: 84,
+          width: 112,
           height: 28,
           borderWidth: 1,
           borderColor: ink(0.35),
@@ -172,9 +203,9 @@ export default function ProfileScreen() {
           backgroundColor: pressed ? SURFACE.press : undefined,
         })}
       >
-        <Mono size={7} tracking={0.16} color={ink(0.8)}>
-          LOADOUT
-        </Mono>
+        <Sans size={11} weight={500} color={ink(0.85)}>
+          Change loadout
+        </Sans>
       </Pressable>
     </Screen>
   );

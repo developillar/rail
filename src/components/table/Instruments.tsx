@@ -10,15 +10,30 @@ import { amber, chips, GROUND, ink, INK, SURFACE } from '@/design/tokens';
 
 /**
  * The most-touched surface in the app. It has to feel like an instrument, so
- * every cell is a hairline-divided plate rather than a rounded button, the
- * primary is a filled bone slab (no accent on a chip action), and the only
- * amber on the bar is the clock that belongs to you.
+ * every cell is a hairline-divided plate rather than a rounded button and the
+ * primary is a filled bone slab — no accent on a chip action: FOLD, CALL,
+ * RAISE TO and the amount they carry are all bone.
+ *
+ * Amber appears four times here and each one is time or expression, never a
+ * stake: your clock and its urgency ticks (never another player's, which runs
+ * as a bone hairline), the throw key's diamond and its cooldown gauge, and the
+ * slide rule's thumb — which marks *where your finger is*, not what the bet is
+ * worth, and goes with the finger. The bet itself is bone at 44px. The ALL IN
+ * stop label turns amber only once the thumb is seated on it (2f).
  */
 
 const BAR_Y = CHROME.actionBar.y;
 const BAR_H = CHROME.actionBar.h;
 
-/** A press state that is never just an opacity change. */
+/**
+ * A press state that is never just an opacity change.
+ *
+ * It is also the one place the instrument's presses are announced. Every cell in
+ * the action bar, the quick-bet row and the raise footer goes through here, so
+ * the role and the disabled state are declared once: an unlabelled text group is
+ * not a button, and the table's controls are the ones it is least acceptable on.
+ * `label` is only needed where the drawn child is not a readable phrase.
+ */
 function Cell({
   onPress,
   disabled,
@@ -27,6 +42,7 @@ function Cell({
   children,
   flex,
   width,
+  label,
 }: {
   onPress?: () => void;
   disabled?: boolean;
@@ -35,11 +51,16 @@ function Cell({
   children: React.ReactNode;
   flex?: number;
   width?: number;
+  /** Overrides the child text for assistive tech. Omit when the child says it. */
+  label?: string;
 }) {
   return (
     <Pressable
       onPress={onPress}
       disabled={disabled}
+      accessibilityRole="button"
+      accessibilityState={{ disabled: !!disabled }}
+      {...(label ? { accessibilityLabel: label } : null)}
       style={({ pressed }) => [
         { flex, width, alignItems: 'center', justifyContent: 'center' },
         style,
@@ -270,10 +291,13 @@ export function FoldedBar({
 }) {
   return (
     <>
-      <Box l={20} t={706}>
+      <Box l={20} t={706} style={{ flexDirection: 'row', alignItems: 'baseline', gap: 6 }}>
         <Sans size={8} tracking={0.22} color={ink(0.28)}>
-          NEXT HAND IN {Math.max(0, Math.ceil(nextHandIn))}
+          NEXT HAND IN
         </Sans>
+        <Mono size={8} color={ink(0.28)}>
+          {Math.max(0, Math.ceil(nextHandIn))}
+        </Mono>
       </Box>
       <Rule l={0} t={754} w={420} color={ink(0.1)} />
       <Box l={0} t={755} w={420} h={55} style={{ flexDirection: 'row', alignItems: 'center' }}>

@@ -7,6 +7,7 @@ import { Box, Mono, Rule, Sans } from '@/components/Prim';
 import { ReactionMark } from '@/components/Reaction';
 import { Screen } from '@/components/Screen';
 import { CAST, CROWD, EDITION } from '@/data/fixtures';
+import { CONSTRAINT } from '@/data/social';
 import { chips, ink, INK, SURFACE } from '@/design/tokens';
 
 /**
@@ -27,15 +28,16 @@ import { chips, ink, INK, SURFACE } from '@/design/tokens';
  * The date and the edition number stay in the meta slot: this document dates
  * itself, which is why the nav bar under it never counts what is unread.
  *
- * THE RESERVE — the one number that changed. FEED is a destination, so the rail
- * is drawn across the foot of the viewport while this document scrolls under it,
- * and §2 requires every destination canvas to end with NAV_RESERVE units of
- * empty ground below its last ink. Last ink is the crowd strip, which ends at
- * 850, so the canvas ends at 914 instead of 900. Nothing moved; 14 units of
- * ground were added under a scrolling document so nothing lands beneath the bar.
+ * THE FOOT. FEED is a destination, so it ends the way HOME, TABLES and FRIENDS
+ * end: on the play-chips constraint, in mono agate at 7/.12/ink(0.32)/lh1.7, read
+ * from the same `CONSTRAINT` object they read — a statement of fact under the
+ * crowd strip, not a disclaimer. The canvas was extended by those two lines
+ * rather than crowding the crowd: last ink is the constraint's second line at
+ * 884, and §2's NAV_RESERVE of empty ground follows it, so the rail drawn across
+ * the foot of the viewport never lands on ink while this document scrolls.
  */
-/** Last ink: the foot's crowd busts, t=828, size 22. */
-const LAST_INK = 850;
+/** Last ink: the constraint's second line, t=860, two lines of mono 7 at lh 1.7. */
+const LAST_INK = 884;
 
 export default function FeedScreen() {
   const router = useRouter();
@@ -61,7 +63,7 @@ export default function FeedScreen() {
         <Sans size={7} tracking={0.3} color={ink(0.4)}>
           POT
         </Sans>
-        <Mono size={26} weight={700} tracking={-0.035} lh={0.9}>
+        <Mono size={30} weight={700} tracking={-0.04} lh={0.9}>
           {chips(lead.pot)}
         </Mono>
       </Box>
@@ -101,6 +103,8 @@ export default function FeedScreen() {
       <Box l={20} t={298} w={380} h={44} style={{ flexDirection: 'row' }}>
         <Pressable
           onPress={() => router.push('/clip')}
+          accessibilityRole="button"
+          accessibilityLabel="Watch the clip of the lead hand"
           style={({ pressed }) => ({
             width: 170,
             height: 44,
@@ -142,13 +146,15 @@ export default function FeedScreen() {
 
       <Rule l={0} t={366} w={420} color={ink(0.2)} />
       <Box l={20} t={380}>
-        <Mono size={8} tracking={0.3} color={ink(0.6)}>
+        <Mono size={7} tracking={0.3} color={ink(0.55)}>
           BAD BEATS
         </Mono>
       </Box>
+      {/* A measurement of the section, from the data. This document dates itself,
+          so nothing here counts what is unread. */}
       <Box r={20} t={380}>
-        <Mono size={7} tracking={0.14} color={ink(0.35)}>
-          3 NEW
+        <Mono size={7} tracking={0.12} color={ink(0.32)}>
+          {EDITION.badBeats.length} TONIGHT
         </Mono>
       </Box>
 
@@ -162,7 +168,7 @@ export default function FeedScreen() {
               </Sans>
             </Box>
             <Box l={20} t={top + 36}>
-              <Mono size={7.5} tracking={0.12} color={ink(0.4)}>
+              <Mono size={7} tracking={0.12} color={ink(0.4)}>
                 {item.meta}
               </Mono>
             </Box>
@@ -179,7 +185,7 @@ export default function FeedScreen() {
 
       <Rule l={0} t={616} w={420} color={ink(0.2)} />
       <Box l={20} t={630}>
-        <Mono size={8} tracking={0.3} color={ink(0.6)}>
+        <Mono size={7} tracking={0.3} color={ink(0.55)}>
           FROM YOUR TABLES
         </Mono>
       </Box>
@@ -195,12 +201,14 @@ export default function FeedScreen() {
               </Sans>
             </Box>
             <Box l={58} t={top + 36}>
-              <Mono size={7.5} tracking={0.12} color={ink(0.4)}>
+              <Mono size={7} tracking={0.12} color={ink(0.4)}>
                 {item.meta}
               </Mono>
             </Box>
             <Pressable
               onPress={() => router.push(i === 0 ? '/table' : '/clip')}
+              accessibilityRole="button"
+              accessibilityLabel={`${item.action}: ${item.headline}`}
               style={({ pressed }) => ({
                 position: 'absolute',
                 right: 20,
@@ -232,6 +240,16 @@ export default function FeedScreen() {
       <Box r={20} t={834}>
         <Mono size={8} tracking={0.14} color={ink(0.45)}>
           {EDITION.footer}
+        </Mono>
+      </Box>
+
+      {/* The constraint every destination's foot carries, at the destinations' own
+          values and from their own object, so the edition cannot say it differently. */}
+      <Box l={20} t={860} w={380}>
+        <Mono size={7} tracking={0.12} color={ink(0.32)} lh={1.7}>
+          {CONSTRAINT.feed[0]}
+          {'\n'}
+          {CONSTRAINT.feed[1]}
         </Mono>
       </Box>
     </Screen>

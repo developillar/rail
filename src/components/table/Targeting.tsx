@@ -111,6 +111,8 @@ export function Targeting({
       <Pressable
         onPress={onClose}
         hitSlop={16}
+        accessibilityRole="button"
+        accessibilityLabel="Close the throw tray"
         style={{ position: 'absolute', right: 20, top: CHROME.tray.hint }}
       >
         <Sans size={8} tracking={0.22} color={ink(0.5)}>

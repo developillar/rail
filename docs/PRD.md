@@ -5,7 +5,8 @@ Status: this describes a working prototype, not a shippable product. Everything 
 Where the two are easy to confuse — the poker engine above all — the document says so in
 plain words rather than implying more than is built.
 
-Companion documents: `README.md` (what exists and why), `docs/APP-SHELL-SPEC.md` (the
+Companion documents: `README.md` (what exists and why), `docs/DESIGN.md` (the design law, the
+judgement calls, and the seven declared deviations from the handoff), `docs/APP-SHELL-SPEC.md` (the
 canonical geometry of the navigation, the boot sequence, HOME, TABLES and FRIENDS),
 `chats/chat1.md` and `chats/chat2.md` (the design conversation the whole thing came out of),
 `project/RAIL Table.dc.html` (the original design handoff, ten asks, every panel).
@@ -43,9 +44,13 @@ buttons greyed out, offered because a friend asked to watch. RAIL inverts it. Th
 where most people are most of the time, so the rail is where the product lives: you arrive
 watching, you react from outside the line, you read the hand afterwards as an edition, and
 taking a seat is one of several equally legitimate things to do with an evening. The
-prototype's own record screen makes the claim numerically: hands *watched* (12,940) is set in
-the same size, on the same shelf, as hands *played* (4,812), and "seated from the rail 58
-times" is a career statistic.
+prototype's own record screen makes the claim numerically, and makes it as loudly as it can: hands
+*watched* (12,940) is the one large figure on the whole screen, set at mono 30 beside your bust,
+while hands *played* (4,812) opens the career list beneath it at mono 14. The two sit in the same
+column of the same document, and the contrast between them is the argument. "Seated from the rail 58
+times" is a career statistic, and FRIENDS prints that same 58 as its own relief figure. (An earlier
+draft of the record set both figures at 14, on the same shelf, which was the more literal way of
+saying it and left the screen with no figure worth reading.)
 
 Two consequences are designed into everything, and both are testable as defects:
 
@@ -136,10 +141,14 @@ smallest and largest type on any screen (HOME runs 7 → 78 = 11.1×, FRIENDS 7 
 TABLES 7 → 30 = 4.3×), and every screen names one dense zone and one nearly empty zone in its
 own source comment. A 14/16/20/24 ramp is a defect.
 
-**6. Amber is a budget, not a palette.** Consequence: under 5% of any screen, and in practice
-far less — HOME carries exactly one amber figure (a 13px clock, about 0.2% of the screen) and
-FRIENDS carries exactly one amber mark (the crowd on the hand you are watching). Amber on a
-chip, a stake, a seat, a name, a button or any part of navigation is a defect.
+**6. Amber is a budget, not a palette.** Consequence: under 5% of any screen, and in practice far
+less. HOME carries exactly one amber figure (a 13px clock, about 0.2% of the screen); FRIENDS carries
+exactly one amber mark (the crowd on the hand you are watching); TABLES and FEED carry one crowd mark
+per item that has a crowd, five and four respectively, which is well under 1% of either canvas; the
+boot carries none at all. Every one of the eleven is a clock or a crowd. Amber on a chip, a stake, a
+seat, a name, a button or any part of navigation is a defect, and the navigation components contain no
+call to `amber()` at all. `docs/DESIGN.md` §2 rule 1 prints the full inventory, and §6.10 records the
+two places the handoff spends amber somewhere this rule would not.
 
 **7. Nothing is reachable only by gesture, and nothing blocks input.** Consequence: the
 showdown can be skipped by tapping anywhere; the boot sequence can be skipped by tapping
@@ -166,7 +175,8 @@ rule that drains; another player's clock is a bone hairline, because the accent 
 2. **Sizing a raise.** The bar becomes the slide rule: minor ticks every 100 chips, four
    named stops (MIN 1,200 · ½ 2,100 · POT 4,250 · ALL IN 4,820), a 2px thumb with a diamond
    head, and the amount set at 44px against a 9px label. Dragging is 1:1 with no inertia;
-   stops seat with a 120 ms settle and a selection haptic. Committing everything **arms
+   stops seat on the frame the finger crosses them, with a selection haptic — a detent is a reticle, and
+   reticles snap rather than interpolate. Committing everything **arms
    first**: the cell states `PRESS AGAIN · ALL IN 4,820` and waits for a second deliberate
    press.
 3. **Waiting.** Dead time is not dead: two resting orders (queue fold, queue call-any) plus
@@ -186,7 +196,7 @@ rule that drains; another player's clock is a bone hairline, because the accent 
    is the only object that travels: it collapses, arcs to the winner's bust, is absorbed, the
    stack counts with tabular digits, the bust punches 1.06× (the only squash in the app), and
    at T+900 railbird reactions arrive as amber ticks on the same head strip a throwable uses.
-   Everything clears on one 180 ms exit. Losing is a subtraction — desaturate, drop 3px, count
+   Everything clears on the T+1,400 beat (by unmounting, not yet by a tween — see §12). Losing is a subtraction — desaturate, drop 3px, count
    the stack down, no red, no delta chip — and by T+1,400 you are indistinguishable from
    someone who folded pre-flop.
 
@@ -217,18 +227,24 @@ keeps device width and scrolls.
 
 | Route | File | Kind | Canvas | Masthead / header |
 |---|---|---|---|---|
-| `/` | `app/index.tsx` | boot overlay | own frame, `width / 420` | the mark itself |
+| `/` | `app/index.tsx` | boot route | own frame, `width / 420` | the mark itself |
 | `/home` | `app/home.tsx` | destination | 880, scroll | `RAIL` |
 | `/tables` | `app/tables.tsx` | destination | 1032, scroll | `TABLES` + `LISTINGS · PLAN` |
-| `/feed` | `app/feed.tsx` | destination | 914, scroll | `THE RAIL` |
+| `/feed` | `app/feed.tsx` | destination | 948, scroll | `THE RAIL` |
 | `/friends` | `app/friends.tsx` | destination | 1620, scroll | `YOUR RAIL` |
 | `/floor` | `app/floor.tsx` | pushed (second register of TABLES) | 900, scroll | `THE FLOOR` + `LISTINGS · PLAN` |
 | `/table` | `app/table.tsx` | pushed | 912, fit | own 14px header, rule at 88 |
 | `/rail` | `app/rail.tsx` | pushed | 720, fit | own header, rule at 44 |
 | `/clip` | `app/clip.tsx` | pushed | 760, fit | own header, rule at 44 |
 | `/profile` | `app/profile.tsx` | pushed | 870, scroll | `THE RECORD` |
-| `/loadout` | `app/loadout.tsx` | pushed | 768, scroll | `LOADOUT` |
+| `/loadout` | `app/loadout.tsx` | pushed | 852, scroll | `LOADOUT` |
 | `/shop` | `app/shop.tsx` | pushed | 720, scroll | `THE COUNTER` |
+
+`/` is a **route**, not an overlay: it is the first screen of the flat headerless `<Stack>` and it
+ends in `router.replace('/home')`, which leaves no history, so back never returns to it and the
+navigation bar — which reads the pathname itself — draws nothing over it. `docs/APP-SHELL-SPEC.md` §4
+originally specified an overlay above the Stack; `docs/DESIGN.md` §6.10 carries the argument both
+ways.
 
 ### `/` — Boot
 
@@ -250,11 +266,18 @@ stand. It is a door, not a dashboard.
 **Does:** a hero of one figure — `4`, at mono 78 — for how many of your people are at a table
 right now, `OF 11 ON YOUR RAIL / ACROSS 3 TABLES` beside it in 8px agate, one Helvetica
 sentence ("Bea sat down before dinner and has not given a chip back since"), and the screen's
-only amber: `OKONKWO TO ACT / 0:06`, a live countdown. Then the paired door slab, then a dense
-`YOU, TONIGHT` band with your bust, handle, `12,940 WATCHED · 4,812 PLAYED`, free throws
-remaining, four equipped loadout tiles at 96-unit pitch, and three route cells (`The record`,
-`Loadout`, `The counter`) divided by two vertical hairlines rather than boxed. The foot is the
-rail as an object with `11 ON YOUR RAIL` beside it, then the constraint in agate.
+only amber: `OKONKWO TO ACT / 0:11`, a live countdown that **loops**, because HOME stands outside a
+room where somebody is always to act and a clock frozen on `0:00` under a line saying otherwise is
+the one thing on the screen that would be lying. Then the paired door slab —
+`Walk in on Bea's table / 238 WATCHING` at 240 units beside `Take a seat` at 140, both 44 tall — and
+the edition named and dated in the seam beneath it. Then a dense `YOU, TONIGHT` band with your bust,
+handle, `12,940 WATCHED · 4,812 PLAYED`, free throws remaining, **three equipped loadout tiles plus
+the dashed empty fourth slot** at 96-unit pitch under `3 OF 4 SLOTS`, and three route cells
+(`The record`, `Loadout`, `The counter`) divided by two vertical hairlines rather than boxed. The
+foot is the rail as an object — one rule with the first six of your eleven people hanging off it and
+`+5 MORE` — with `11 ON YOUR RAIL` beside it as the way through to them, then the constraint in
+agate. The faces are your roster, never the anonymous crowd of table 12: two of that crowd's faces
+are pending friend requests, i.e. people explicitly not on your rail.
 **Deliberately absent:** a roster (that is FRIENDS), a second room (that is TABLES), an unread
 badge, a chart, a chip balance presented as a score, and a numeral inside any Helvetica
 sentence on the screen.
@@ -268,10 +291,15 @@ it, the pot as the only large numeral (mono 30), the room's own rail drawn as a 
 crowd hanging below the line, and an amber crowd mark whose length is the count. Listings are
 sorted by watchers, descending — in the code, not only in the copy. Four noise bands (LOUD
 ≥ 40, WARM ≥ 4, QUIET ≥ 1, EMPTY 0) drive four channels: listing opacity, rail weight and ink,
-how many busts hang off it, and pot ink. The one room that is not dealing gets the only honest
-call to action in a lobby — `Sit first / MIN 4,000` at full ink inside its dimmed listing. The
+how many busts hang off it (3 / 2 / 1 / 0), and pot ink. Each room's faces are sliced disjointly from
+one register, so no face stands on two rails at once even though all six rails are drawn on one
+canvas, and each strip's `+N MORE` is arithmetic on the busts beside it rather than a figure read off
+a fixture. The one room that is not dealing gets the only honest
+call to action in a lobby — `Sit first / MIN 4,000` at full ink inside its dimmed listing, drawn as a
+sibling of the listing so the room's 45% band cannot dim the one thing on it worth pressing. The
 masthead carries `LISTINGS · PLAN` with the 2px rule notched under the half you are standing
-in; PLAN pushes `/floor`.
+in; PLAN pushes `/floor`. The foot's `Open a table` and `Private room` are drawn but do not open
+anything yet, so they are marked disabled rather than left indistinguishable from a live control.
 **Deliberately absent:** sortable columns, stakes as a sort key, waitlist counts as a metric,
 a card per listing, and any second target inside a listing. One press per room, and it opens
 the rail.
@@ -319,7 +347,9 @@ table reaction. Joining is a 620 ms sequence: your bust leaves the rail along th
 path a throwable travels, the empty slot takes a reticle, the buy-in uses the same slide rule
 as a bet, the boundary notch widens to admit you, and the rail count drops by one as the crowd
 chips shrink — you are the subject now, not one of them. When the table is full, the join
-becomes a waitlist with position and ETA.
+becomes a waitlist with position and ETA — drawn as a state rather than modelled: the vantage's
+`SEAT OPEN` and the tape's `TABLE FULL` are two panels of the handoff shown at two distances, and
+nothing tracks table fullness yet.
 **Deliberately absent:** a chat, a "request to play" queue you cannot see the front of, and
 any way to affect the hand. A railbird's only instrument is a throw, and it is metered.
 
@@ -341,22 +371,28 @@ and a reaction count above the fold.
 **For:** the rail as editorial. A dashboard reports; an edition decides.
 **Does:** a masthead (`THE RAIL`, `29 JUL · ED 412`), one lead hand with a real headline
 containing a verdict — "Bea puts 4,200 in with second pair, and is right." — its board, its
-pot at mono 26, winner and loser busts with their lines, the reaction total massed into one bar
+pot at mono 30, winner and loser busts with their lines, the reaction total massed into one bar
 with the breakdown in agate beside it, and `Watch clip / 0:24`. Then everything else demoted:
-`BAD BEATS` in agate with three items and their cards at 16×22, then `FROM YOUR TABLES` where
-you appear in the third person ("You lost 4,820 to a straight flush", `Rematch`).
+`BAD BEATS` in agate with three items and their cards at 16×22, answered from the right margin by a
+measurement of the section itself (`3 TONIGHT`, read from the data), then `FROM YOUR TABLES` where
+you appear in the third person ("You lost 4,820 to a straight flush", `Rematch`). It ends the way the
+other three destinations end, on the play-chips constraint in mono agate.
 **Deliberately absent:** an infinite grid, vanity metrics above a headline, a like button, and
-any unread count in the navigation bar — the document dates itself, which is precisely why the
-bar never counts what is unread.
+any unread count anywhere — not in the navigation bar and not on the document. The edition dates
+itself, which is precisely why nothing has to count what is unread. (`3 NEW` was on this screen for
+a while and is exactly the string the shell spec bans by name.)
 
 ### `/friends` — your rail
 
 **For:** "your friends are your rail" as a structure rather than a slogan.
-**Does:** a hero of one figure — `340`, hands of yours Sven has watched — and the sentence
-that makes it mean something. Then the rail as a literal object: one 2px rule with notches cut
+**Does:** a masthead reading `11 PEOPLE · 5 ON NOW`, a hero of one figure — `340`, hands of yours
+Sven has watched — and the sentence that makes it mean something. Then the rail as a literal object:
+one 2px rule with notches cut
 for the people who are *seated* (bust astride the notch, frame lit) while people who are
 *railing* hang below an unbroken line, people who are merely *around* stand clear of the line
-entirely at 22 units, and people who are away get no bust at all, only `+4 AWAY TONIGHT`.
+entirely at 22 units, and people who are away get no bust at all, only `+4 AWAY TONIGHT`. The four
+states account for the whole roster and the masthead's figure is derived from it: five on the line,
+two standing clear, four away — eleven people, five on now.
 Presence is drawn with the app's own vocabulary — notch, line, frame, size, opacity — and never
 with a coloured dot. A dedicated band carries the most interesting state on the screen,
 somebody watching the same hand as you, drawn as one rail rule with two busts on it and the
@@ -374,10 +410,13 @@ requests, and any amber on a state change.
 
 **For:** a record, not a trophy case.
 **Does:** your bust at 72 units with a ticked head strip, sessions and hours on the rail,
-`SEATED FROM THE RAIL 58 TIMES`, one Helvetica line ("You have watched more hands than you have
-played, and it shows"), then six career rows where hands watched sits in the same column as
-hands played. Then two separate shelves: `EARNED · 9`, each tile carrying the hand it came from
-(`TABLE 7 · QUADS BEATEN · 14 JUN`), and `PURCHASED · 4`, each carrying an edition and a price.
+`SEATED FROM THE RAIL 58 TIMES`, `Change loadout` as a press in the ground beside it, and — in the
+empty ground to the right, where the agate lines stop — the screen's one large figure:
+`HANDS WATCHED / 12,940` at mono 30. Then one Helvetica line ("You have watched more hands than you
+have played, and it shows"), then the career at one size, five rows opening on `HANDS PLAYED`, so the
+figure above is the thing the list is measured against. Then two separate shelves: `EARNED · 9`, each
+tile carrying the hand it came from (`TABLE 7 · QUADS BEATEN · 14 JUN`), and `PURCHASED · 4`, each
+carrying an edition and a price.
 **Deliberately absent:** a win rate, a leaderboard position, a chip graph, a level, and a
 shared shelf — a shared shelf would let the two classes borrow each other's meaning.
 
@@ -385,15 +424,19 @@ shared shelf — a shared shelf would let the two classes borrow each other's me
 
 **For:** the place the earned/purchased distinction has to work hardest, because both classes
 sit adjacent at the same size.
-**Does:** four slots, each showing its object at 56 units in its own class frame, its title in
-Helvetica, its origin in mono, and its provenance line; an `EQUIP` / `EQUIPPED` cell that
+**Does:** four slots on a 66-unit pitch, each showing its object at 56 units in its own class frame,
+its title in Helvetica, its origin in mono, and its provenance line; an `EQUIP` / `EQUIPPED` cell that
 toggles instantly; an empty fourth slot drawn as the only dashed frame in the app, so it reads
-as absence rather than a button. Then `HOW IT LANDS` — a live preview of exactly what an
+as absence rather than a button. Then, in a near-empty band of its own, the count this screen is
+actually about — `ON YOU RIGHT NOW`, how many of your four slots have something on them, as one mono
+34 figure read from the same state the `EQUIP` and `FILL` cells write, with 63 units of ground under
+it. Then `HOW IT LANDS` — a live preview of exactly what an
 opponent sees when your throw lands on their head strip, filled from a seat and hollow from the
 rail, with the 1.06× punch you can press to replay — and `RAIL CARD`, proving both classes
 survive at 26 and 22 units on a stranger's rail. The foot states the two rules that matter: a
 slot accepts either class, and swapping is free and instant, because loadout is expression, not
-commitment.
+commitment. The way on is a slab — `The counter`, with your credit balance in its mono figure slot —
+because a slot you cannot fill from your own shelves is filled at the counter.
 **Deliberately absent:** rarity tiers, stat lines, set bonuses, and any suggestion that
 equipping a purchased object changes the throw. `NEITHER CLASS CHANGES THE THROW — ONLY THE
 OBJECT THROWN`.
@@ -622,8 +665,14 @@ of each destination, in the app's own voice, never as a legal modal:
   `CREDITS BUY OBJECTS, NEVER CHIPS`
 - TABLES: `EVERY ROOM IS PLAY CHIPS ONLY · SORTED BY NOISE, NEVER BY STAKES` /
   `CHIPS CANNOT BE BOUGHT, TRANSFERRED OR CASHED OUT`
+- FEED: `EVERY HAND HERE WAS PLAYED FOR PLAY CHIPS` / `CHIPS CANNOT BE BOUGHT, TRANSFERRED OR
+  CASHED OUT`
 - FRIENDS: `A RAIL IS PEOPLE, NOT A FOLLOWER COUNT` / `CHIPS CANNOT BE SENT, RECEIVED OR
   CASHED OUT`
+
+All four lines live in one `CONSTRAINT` object in `src/data/social.ts` and are read from it, so no
+destination can word the constraint differently from the others, and all four are set at the same
+values — mono 7 / `.12` tracking / `ink(0.32)` / 1.7 line height.
 - The invite field carries `NOBODY CAN SEND CHIPS` in its own corner — the constraint stated
   exactly where a person would expect to be able to violate it.
 - The boot screen states the positioning line itself: `SOCIAL POKER ROOMS WITH FRIENDS · PLAY
@@ -631,9 +680,13 @@ of each destination, in the app's own voice, never as a legal modal:
 
 **Voice rules that go with it.** Mono uppercase with wide tracking for eyebrows and labels
 naming territory; sentence-case Helvetica for anything a human would say or press
-(`Take seat 1`, `Just watch`, `Sit first`, `Walk in`). Figures never enter a Helvetica phrase.
-Headlines carry verdicts, because the rail's voice *is* the product. No placeholder copy
-anywhere: no lorem, no "coming soon", no unwritten empty state.
+(`Take seat 1`, `Just watch`, `Sit first`, `Walk in`, `Change loadout`, `The counter`). Figures never
+enter a Helvetica phrase — with one recorded exception, six headlines (the edition's five and
+`/floor`'s one), which are prose and are argued both ways in `docs/DESIGN.md` §6.10. TABLES' six room
+sentences hold the strict version, with no digit in any of them. The table surface is the one place tracked
+uppercase *labels* are Helvetica rather than mono; that is the handoff's own setting and is declared
+in the same section. Headlines carry verdicts, because the rail's voice *is* the product. No
+placeholder copy anywhere: no lorem, no "coming soon", no unwritten empty state.
 
 Not covered here and still required before submission: age gating and store age rating,
 regional review of "social casino" classification, in-app-purchase disclosure for credits, and
@@ -655,14 +708,27 @@ Motion is a requirement, not a decoration budget, and it is specified rather tha
 - **Two declared exemptions.** 0 · TRACK is for anything following a finger 1:1 (the bet
   thumb, the clip scrub, the drag leader). **Meters** — a clock, a cooldown, a loading progress
   — run on elapsed time and are exempt, because a clock cannot lie.
-- **Everything leaves the same way.** One 180 ms OUT, opacity plus a small translate, for every
+- **Everything should leave the same way.** One 180 ms OUT, opacity plus a small translate, for every
   object in the app, so nothing ever exits in a way a user has to learn.
-- **Two overshoots exist in the entire product:** 1.06× on a win, 1.04× on sitting down.
-  Nothing else bounces, ever.
-- **Nothing loops except the clock and the cooldown.**
+  *Built in three places today — the nav's press release, the boot's ephemera, and the join — while
+  the showdown clears by unmounting on its beat rather than tweening out. Closing that gap is a code
+  change, listed in §15.*
+- **Two overshoots you feel, in the entire product:** the winner's bust punching 1.06× over 90 PUNCH,
+  and the table boundary's notch widening over 240 OPEN to admit you as you sit down. Both on SETTLE.
+  Nothing else bounces — with one footnote: the counter's maker's mark borrows the same curve for its
+  120 ms strike, so `EASE.settle` has four call sites and three distinct events. A fourth *felt*
+  overshoot would make the first two ordinary.
+- **Nothing is animated on a loop.** The only looping meter is HOME's door clock, which re-arms at
+  zero because the room it stands outside always has somebody to act. The table's hand clock ends and
+  calls the timeout; the cooldown drains once per throw and clears its own interval at zero. Neither
+  keeps an interval alive after it has
+  stopped counting.
 - **Amber only moves for the crowd and the clock.**
 - **Nothing blocks input.** Every sequence is interruptible, including the win; a tap skips the
-  showdown to T+900 and the boot to its handoff.
+  showdown to T+900 and the boot to its handoff. **The boot in particular waits on nothing:** its
+  beats run on mount, and the reduce-motion query only chooses between the animated path and the cut,
+  so a slow, hung or rejected query costs the animation and never the app. The tap that skips is armed
+  before any effect runs.
 - **Reticles and selected states never interpolate.** The navigation notch, label colour and
   label weight snap on the frame the route changes. The only timed value in the navigation bar
   is a press fill releasing.
@@ -748,27 +814,35 @@ tokenised. `npm run typecheck` is the gate.
 **Known gaps in the prototype itself** — small, worth listing because they will otherwise be
 mistaken for features:
 
-- The navigation bar's HOME cell targets `/`, which is the boot overlay, while HOME itself
-  lives at `/home`. The consequence is visible: HOME draws no notch of its own, and pressing
-  HOME from another destination replays the splash before landing there. Either HOME moves back
-  onto `/` with the boot becoming an overlay above the Stack (which is what
-  `docs/APP-SHELL-SPEC.md` §4 specifies), or the cell's route changes. One line either way.
 - Several drawn controls are inert by design-review necessity rather than intent: `Throw` and
-  `Save` on the edition, `Share clip`, `Open a table`, `Private room`, and `Join waitlist`.
+  `Save` on the edition, `Share clip`, and `Join waitlist`. TABLES' `Open a table` and `Private room`
+  are inert too, and are at least marked `disabled` so a screen reader is not told they are buttons.
 - Loadout equip state, shop ownership, friend requests, invites and the rail's free-throw
   counter are all local component state. They reset when the screen unmounts.
 - Rail throws are hardcoded to seat 3; the rail has no target selection.
-- `INVITATIONS` and `LAST_HAND` exist as written fixtures and are not drawn on any screen.
+- `INVITATIONS` and `LAST_HAND` exist as written fixtures and are not drawn on any screen, and
+  `byStatusThenTogether` is an exported comparator with no call site.
 - The loss sequence's stack figures are not reconciled with the live stack (section 7).
-- `README.md`'s screen table predates the shell work: it lists eight screens and describes
-  `app/index.tsx` as a developer contents page, which it no longer is.
+- The showdown's emoji squash (1.18× for 90 ms, ask 4) is not built; the 1.06× frame punch is.
+- Reduced motion is honoured on the boot screen only. The showdown, the join and the flight do not
+  read `AccessibilityInfo` yet, and the motion spec's global rule says they should.
+- The POT lockup's *label* is set three ways across the app (see `docs/DESIGN.md` §9); its numeral
+  sizes are per canvas and defensible.
+
+The one gap this list used to lead with — "the navigation bar's HOME cell targets `/`" — was never
+real. `NAV_CELLS`' HOME cell is `{ label: 'HOME', route: '/home', … }`, the bar draws its 23 → 81
+notch on HOME, and pressing HOME from another destination navigates straight there. What *was* real
+is that `docs/APP-SHELL-SPEC.md` §3–§5 described the opposite arrangement; the spec has been corrected
+to describe the build, and `docs/DESIGN.md` §6.10 records the choice with the argument against it.
+Anyone who "fixed" this by pointing the HOME cell at `/` would have made every press of HOME replay
+the splash.
 
 ### Stage 1 — Make the prototype coherent (days)
 
-Fix the HOME route, reconcile the loss numerals, lift the local state into one client store so
-equip, ownership and requests survive navigation, wire or remove every inert control, refresh
-`README.md`'s route table, and add target selection to the rail's throw. No new surfaces. The
-outcome is a demo that never contradicts itself in front of an investor.
+Reconcile the loss numerals, lift the local state into one client store so equip, ownership and
+requests survive navigation, wire or remove every inert control, add target selection to the rail's
+throw, and either draw `LAST_HAND` and `INVITATIONS` or delete them. No new surfaces. The outcome is a
+demo that never contradicts itself in front of an investor.
 
 ### Stage 2 — The hand engine (the real blocker)
 

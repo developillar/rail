@@ -28,7 +28,7 @@ import { EASE } from '@/design/motion';
 import { amber, chips, ink, MS } from '@/design/tokens';
 import { useCooldown, useCountdown } from '@/state/meters';
 import { useCount, useShowdown } from '@/state/useShowdown';
-import { useTable } from '@/state/useTable';
+import { FOLDED_HAND_SECONDS, useTable } from '@/state/useTable';
 
 /**
  * Ask 1a, 2a–2f, 3b and 4a/4b, on one surface.
@@ -45,6 +45,9 @@ export default function TableScreen() {
   const api = useTable();
   const cooldown = useCooldown(api.cooldownUntil);
   const clock = useCountdown(HAND.clockSeconds, api.phase === 'your-turn', api.timeout);
+  // 2c states a figure, so the figure has to be true: the folded state's own
+  // meter, on the same clock that deals the next hand.
+  const foldClock = useCountdown(FOLDED_HAND_SECONDS, api.phase === 'folded');
 
   const [tray, setTray] = useState(false);
   const [drag, setDrag] = useState<DragState | null>(null);
@@ -77,14 +80,15 @@ export default function TableScreen() {
     };
   });
 
-  // T+320 — the numeral is the only object that travels, and it takes 18ms of
-  // anticipation upward before it goes.
+  // T+320 — the numeral is the only object that travels. Ask 4a's caption gives
+  // the arc 340ms after 18ms of anticipation upward; ask 9 declares the ladder
+  // canonical and "a transition outside the ladder is a bug", so the arc runs on
+  // MS.travel (320) and the anticipation frame is dropped rather than rounded to
+  // a stop it does not have. A deliberate deviation from the caption, in the
+  // ladder's favour.
   useEffect(() => {
     if (beat >= 2 && !lost) {
-      potTravel.value = withSequence(
-        withTiming(-0.02, { duration: 18 }),
-        withTiming(1, { duration: 340, easing: EASE.arc }),
-      );
+      potTravel.value = withTiming(1, { duration: MS.travel, easing: EASE.arc });
     } else {
       potTravel.value = 0;
     }
@@ -111,7 +115,14 @@ export default function TableScreen() {
   return (
     <Screen>
       {/* Nothing has to be dismissed; a tap anywhere skips to T+900. */}
-      {isShowdown ? <Pressable style={{ position: 'absolute', inset: 0 }} onPress={skip} /> : null}
+      {isShowdown ? (
+        <Pressable
+          style={{ position: 'absolute', inset: 0 }}
+          onPress={skip}
+          accessibilityRole="button"
+          accessibilityLabel="Skip to the end of the showdown"
+        />
+      ) : null}
 
       <Header watching={HAND.watching + (api.phase === 'folded' ? 1 : 0)} reacted={!isShowdown} />
       {/*
@@ -301,7 +312,7 @@ export default function TableScreen() {
       ) : null}
 
       {showBar && api.phase === 'folded' ? (
-        <FoldedBar nextHandIn={12} onThrow={() => setTray(true)} cooldown={cooldown} />
+        <FoldedBar nextHandIn={foldClock.remaining} onThrow={() => setTray(true)} cooldown={cooldown} />
       ) : null}
 
       {showBar && api.phase === 'all-in' ? (
