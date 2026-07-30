@@ -33,7 +33,8 @@
     "web": "expo start --web",
     "typecheck": "tsc --noEmit",
     "build:pages": "PAGES_BASE_URL=/rail expo export --platform web --output-dir dist",
-    "build:standalone": "expo export --platform web --output-dir dist-web && node scripts/make-standalone.js"
+    "build:standalone": "expo export --platform web --output-dir dist-web && node scripts/make-standalone.js",
+    "build:docs": "node scripts/make-docs-page.js"
   },
   "private": true
 }
